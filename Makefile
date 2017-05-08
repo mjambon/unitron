@@ -5,6 +5,9 @@ default: run
 PACKAGES = moving-percentile
 
 LIBSOURCES = \
+  u_log.ml \
+  u_permanent_id.ml \
+  u_test.ml \
   unitron.ml
 
 build:
