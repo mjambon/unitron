@@ -3,6 +3,15 @@
 
    It internally uses ints for efficiency, but maintains a table
    for translating those ints back to their original strings.
+
+   This is essentially a global string <-> int mapping that never gets
+   garbage-collected.
+
+   Note that distinct systems in the same process may use the same
+   identifiers to refer to distinct objects while sharing this mapping
+   between string IDs and int IDs.
+   This works of course as a long as each system maintains its own
+   mapping between the IDs and the objects specific to the system.
 *)
 
 module type Param = sig
