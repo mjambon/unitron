@@ -8,6 +8,10 @@ LIBSOURCES = \
   u_log.mli u_log.ml \
   u_perf.ml \
   u_permanent_id.ml \
+  u_controlid.ml \
+  u_actionid.ml \
+  u_control.ml \
+  u_action.ml \
   u_loop.ml \
   u_test.ml \
   unitron.ml
