@@ -2,20 +2,22 @@
 
 default: run
 
-PACKAGES = moving-percentile
+PACKAGES = unix moving-percentile
 
 LIBSOURCES = \
-  u_log.ml \
+  u_log.mli u_log.ml \
+  u_perf.ml \
   u_permanent_id.ml \
+  u_loop.ml \
   u_test.ml \
   unitron.ml
 
 build:
-	ocamlfind ocamlc -a -o unitron.cma -annot -package $(PACKAGES) \
+	ocamlfind ocamlc -a -o unitron.cma -annot -package "$(PACKAGES)" \
 		$(LIBSOURCES)
-	ocamlfind ocamlopt -a -o unitron.cmxa -annot -package $(PACKAGES) \
+	ocamlfind ocamlopt -a -o unitron.cmxa -annot -package "$(PACKAGES)" \
 		$(LIBSOURCES)
-	ocamlfind ocamlopt -o demo -annot -linkpkg -package $(PACKAGES) \
+	ocamlfind ocamlopt -o demo -annot -linkpkg -package "$(PACKAGES)" \
 		unitron.cmxa demo_main.ml
 
 run: build

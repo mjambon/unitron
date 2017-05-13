@@ -67,5 +67,5 @@ module Test = struct
 end
 
 let tests = [
-  "permanent ID", Test.test;
+  "main", Test.test;
 ]

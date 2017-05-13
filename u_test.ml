@@ -4,8 +4,18 @@
 
 open Printf
 
-let tests = List.flatten [
-  U_permanent_id.tests;
+let flatten ll =
+  List.flatten (
+    List.map (fun (prefix, l) ->
+      List.map (fun (name, f) ->
+        prefix ^ " > " ^ name, f
+      ) l
+    ) ll
+  )
+
+let tests = flatten [
+  "U_permanent_id", U_permanent_id.tests;
+  "U_loop", U_loop.tests;
 ]
 
 let run_test (name, f) =
@@ -19,7 +29,7 @@ let run_test (name, f) =
   name, success
 
 let print_result (name, success) =
-  eprintf "%-20s %s\n" name (if success then "OK" else "ERROR")
+  eprintf "%-30s %s\n" name (if success then "OK" else "ERROR")
 
 let print_summary passed total =
   eprintf "Tests passed: %i/%i\n%!"
