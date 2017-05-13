@@ -12,6 +12,8 @@ LIBSOURCES = \
   u_actionid.ml \
   u_control.ml \
   u_action.ml \
+  u_recent.ml \
+  u_act.ml \
   u_loop.ml \
   u_test.ml \
   unitron.ml
