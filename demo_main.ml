@@ -3,6 +3,6 @@
 *)
 
 let main () =
-  U_test.run_tests ()
+  U_tests.run ()
 
 let () = main ()

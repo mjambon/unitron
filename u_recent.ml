@@ -22,6 +22,8 @@ type 'a t = {
    like for `iter`.
 *)
 let init w f =
+  if w < 1 then
+    invalid_arg "U_recent.init";
   let a =
     Array.init w (fun pos ->
       let age = w - pos - 1 in
@@ -46,16 +48,27 @@ let latest x =
 let iter x f =
   let a = x.array in
   let w = Array.length a in
+  let oldest_index = (x.index + 1) mod w in
   for i = 0 to w - 1 do
     (* position in the array *)
-    let pos = (i + 1) mod w in
+    let pos = (oldest_index + i) mod w in
 
     (* age of the element, using age(latest) = 0 *)
-    let age = w - i - 1 in
+    let age = w - 1 - i in
 
     let elt = a.(pos) in
     f age elt
   done
+
+(*
+   Map the elements from oldest to latest, into a list.
+*)
+let map x f =
+  let acc = ref [] in
+  iter x (fun age elt ->
+    acc := f age elt :: !acc
+  );
+  List.rev !acc
 
 (*
    Move in time, adding 1 to the age of all past elements.
@@ -70,4 +83,36 @@ let next x f =
   a.(new_index) <- f recycled_elt;
   x.index <- new_index
 
-(* TODO: tests *)
+let test () =
+  let w = 3 in
+  let acc1 = ref [] in
+  let x =
+    init w (fun age ->
+      acc1 := age :: !acc1;
+      -age
+    )
+  in
+  assert (!acc1 = List.rev [2; 1; 0]);
+  next x (fun oldest ->
+    assert (oldest = -2);
+    11
+  );
+  assert (latest x = 11);
+  next x (fun oldest ->
+    assert (oldest = -1);
+    12
+  );
+  assert (latest x = 12);
+  next x (fun oldest ->
+    assert (oldest = 0);
+    13
+  );
+  assert (latest x = 13);
+  let l = map x (fun age elt -> elt) in
+  List.iter (fun i -> Printf.printf "%i\n%!" i) l;
+  assert (map x (fun age elt -> elt) = [11; 12; 13]);
+  true
+
+let tests = [
+  "main", test;
+]

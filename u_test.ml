@@ -1,5 +1,5 @@
 (*
-   Run tests for this library.
+   Library for running tests.
 *)
 
 open Printf
@@ -12,11 +12,6 @@ let flatten ll =
       ) l
     ) ll
   )
-
-let tests = flatten [
-  "U_permanent_id", U_permanent_id.tests;
-  "U_loop", U_loop.tests;
-]
 
 let run_test (name, f) =
   eprintf "Test %s\n%!" name;
@@ -35,7 +30,7 @@ let print_summary passed total =
   eprintf "Tests passed: %i/%i\n%!"
     passed total
 
-let run_tests () =
+let run_tests tests =
   let results = List.map run_test tests in
   List.iter print_result results;
   let passed = List.length (List.filter snd results) in

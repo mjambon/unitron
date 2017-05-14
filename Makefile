@@ -1,6 +1,10 @@
-.PHONY: default build run install uninstall reinstall clean
+.PHONY: default build run utop install uninstall reinstall clean
 
 default: run
+
+# Launch utop with a suitable value for OCAMLPATH
+utop:
+	OCAMLPATH=$$(dirname `pwd`):$$OCAMLPATH utop
 
 PACKAGES = unix moving-percentile
 
@@ -16,9 +20,10 @@ LIBSOURCES = \
   u_act.ml \
   u_loop.ml \
   u_test.ml \
+  u_tests.ml \
   unitron.ml
 
-build:
+build: META
 	ocamlfind ocamlc -a -o unitron.cma -annot -package "$(PACKAGES)" \
 		$(LIBSOURCES)
 	ocamlfind ocamlopt -a -o unitron.cmxa -annot -package "$(PACKAGES)" \
@@ -30,7 +35,8 @@ run: build
 	./demo
 
 META: META.in
-	cp META.in META
+	echo 'requires = "$(PACKAGES)"' > META
+	cat META.in >> META
 
 install: META
 	ocamlfind install unitron META \
@@ -43,4 +49,4 @@ reinstall:
 	$(MAKE) uninstall; $(MAKE) install
 
 clean:
-	rm -f *~ *.cm[ioxa] *.cmx[as] *.o *.a *.annot demo
+	rm -f *~ *.cm[ioxa] *.cmx[as] *.o *.a *.annot demo META
