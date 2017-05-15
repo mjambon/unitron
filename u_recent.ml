@@ -75,7 +75,7 @@ let map x f =
    The oldest element is passed to the user function to be recycled
    into the new latest element.
 *)
-let next x f =
+let step x f =
   let a = x.array in
   let w = Array.length a in
   let new_index = (x.index + 1) mod w in
@@ -93,17 +93,17 @@ let test () =
     )
   in
   assert (!acc1 = List.rev [2; 1; 0]);
-  next x (fun oldest ->
+  step x (fun oldest ->
     assert (oldest = -2);
     11
   );
   assert (latest x = 11);
-  next x (fun oldest ->
+  step x (fun oldest ->
     assert (oldest = -1);
     12
   );
   assert (latest x = 12);
-  next x (fun oldest ->
+  step x (fun oldest ->
     assert (oldest = 0);
     13
   );
