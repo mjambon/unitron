@@ -21,6 +21,8 @@ LIBSOURCES = \
   u_recent_acts.ml \
   u_loop.ml \
   u_system.ml \
+  u_learn.ml \
+  u_cycle.ml \
   u_test.ml \
   u_tests.ml \
   unitron.ml

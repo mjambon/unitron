@@ -14,6 +14,25 @@ let create window_length =
 let step x =
   U_recent.step x.recent (fun old -> U_set.clear old; old)
 
+let get_latest x =
+  U_recent.get_latest x.recent
+
 let add x controlid =
-  let latest = U_recent.latest x.recent in
+  let latest = get_latest x in
   U_set.add latest controlid
+
+(*
+   Fold over all the pairs (age, control ID)
+*)
+let fold x acc0 f =
+  U_recent.fold x.recent acc0 (fun age set acc ->
+    U_set.fold set acc (fun controlid acc ->
+      f age controlid acc
+    )
+  )
+
+let iter x f =
+  fold x () (fun age controlid () -> f age controlid)
+
+let to_list x =
+  fold x [] (fun age controlid acc -> (age, controlid) :: acc)

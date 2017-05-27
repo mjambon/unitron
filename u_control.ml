@@ -15,5 +15,6 @@ type contribution = {
 type t = {
   controlid: U_controlid.t;
   action: U_actionid.t;
-  contribution: contribution;
+  contributions: contribution array;
+    (* one contribution per age, starting from age 0 *)
 }

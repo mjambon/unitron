@@ -38,7 +38,7 @@ let init w f =
 (*
    Return the latest element, whose age is 0.
 *)
-let latest x =
+let get_latest x =
   x.array.(x.index)
 
 (*
@@ -61,14 +61,17 @@ let iter x f =
   done
 
 (*
-   Map the elements from oldest to latest, into a list.
+   Accumulate over the elements from oldest to latest.
 *)
-let map x f =
-  let acc = ref [] in
+let fold x acc0 f =
+  let acc = ref acc0 in
   iter x (fun age elt ->
-    acc := f age elt :: !acc
+    acc := f age elt !acc
   );
-  List.rev !acc
+  !acc
+
+let to_list x =
+  List.rev (fold x [] (fun age elt acc -> (age, elt) :: acc))
 
 (*
    Move in time, adding 1 to the age of all past elements.
@@ -84,6 +87,7 @@ let step x f =
   x.index <- new_index
 
 let test () =
+  let elements x = List.map snd (to_list x) in
   let w = 3 in
   let acc1 = ref [] in
   let x =
@@ -97,20 +101,20 @@ let test () =
     assert (oldest = -2);
     11
   );
-  assert (latest x = 11);
+  assert (get_latest x = 11);
   step x (fun oldest ->
     assert (oldest = -1);
     12
   );
-  assert (latest x = 12);
+  assert (get_latest x = 12);
   step x (fun oldest ->
     assert (oldest = 0);
     13
   );
-  assert (latest x = 13);
-  let l = map x (fun age elt -> elt) in
+  assert (get_latest x = 13);
+  let l = elements x in
   List.iter (fun i -> Printf.printf "%i\n%!" i) l;
-  assert (map x (fun age elt -> elt) = [11; 12; 13]);
+  assert (elements x = [11; 12; 13]);
   true
 
 let tests = [
