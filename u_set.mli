@@ -25,7 +25,7 @@ val create : ('v -> 'k) -> ('k, 'v) t
 val create_set : unit -> 'a set
   (* Create an empty set. *)
 
-val get : ('k, 'v) t -> 'c -> ('k -> 'v) option
+val get : ('k, 'v) t -> 'k -> 'v option
   (* Get an element from its key. *)
 
 val add : ('k, 'v) t -> 'v -> unit
@@ -37,7 +37,7 @@ val remove : ('k, 'v) t -> 'v -> unit
 val remove_key : ('k, 'v) t -> 'k -> unit
   (* Remove an element from its key. *)
 
-val pop : ('k, 'v) t -> 'k -> ('k -> 'v) option
+val pop : ('k, 'v) t -> 'k -> 'v option
   (* Get an element, then remove it. *)
 
 val to_list : ('k, 'v) t -> 'v list

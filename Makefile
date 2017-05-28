@@ -10,8 +10,10 @@ PACKAGES = unix moving-percentile
 
 LIBSOURCES = \
   u_log.mli u_log.ml \
+  u_test.ml \
   u_perf.ml \
   u_set.mli u_set.ml \
+\
   u_permanent_id.ml \
   u_controlid.ml \
   u_actionid.ml \
@@ -22,10 +24,11 @@ LIBSOURCES = \
   u_loop.ml \
   u_system.ml \
   u_learn.ml \
-  u_cycle.ml \
-  u_test.ml \
-  u_tests.ml \
-  unitron.ml
+  u_cycle.mli u_cycle.ml \
+\
+  u_eval_simple.ml \
+\
+  u_tests.ml
 
 build: META
 	ocamlfind ocamlc -a -o unitron.cma -annot -package "$(PACKAGES)" \

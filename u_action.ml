@@ -7,6 +7,20 @@
 *)
 
 type t = {
-  actionid: U_actionid.t;
+  id: U_actionid.t;
   func: unit -> unit;
 }
+
+let create id func =
+  { id; func }
+
+let create_set () =
+  U_set.create (fun x -> x.id)
+
+let add actionid func set =
+  U_set.add set (create actionid func)
+
+let get set id =
+  match U_set.get set id with
+  | None -> failwith ("Invalid action ID " ^ U_actionid.to_string id)
+  | Some x -> x

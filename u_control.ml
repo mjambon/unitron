@@ -15,11 +15,44 @@ type contribution = {
 }
 
 type t = {
-  controlid: U_controlid.t;
-  action: U_actionid.t;
+  id: U_controlid.t;
+  actionid: U_actionid.t;
   contributions: contribution array;
     (* one contribution per age, starting from age 0 *)
 }
+
+let create_contribution moving_avg_cst =
+  {
+    last = 0.;
+    variance =
+      Moving_variance.init
+        ~r_avg:moving_avg_cst
+        ~r_var:moving_avg_cst
+        ()
+  }
+
+let create ~moving_avg_cst ~window_length ~id ~actionid =
+  let contributions =
+    Array.init window_length
+      (fun i -> create_contribution moving_avg_cst)
+  in
+  {
+    id;
+    actionid;
+    contributions;
+  }
+
+let create_set () =
+  U_set.create (fun x -> x.id)
+
+let add ~moving_avg_cst ~window_length ~id ~actionid set =
+  let control = create ~moving_avg_cst ~window_length ~id ~actionid in
+  U_set.add set control
+
+let get set id =
+  match U_set.get set id with
+  | None -> failwith ("Invalid control ID " ^ U_controlid.to_string id)
+  | Some x -> x
 
 (*
    Get the weight used to correct the contribution based on the difference
@@ -31,8 +64,16 @@ type t = {
    relative to the other contributions.
 *)
 let get_weight (x : contribution) =
-  sqrt (Moving_variance.get (x.variance))
+  let mv = x.variance in
+  let n = Moving_variance.get_count mv in
+  if n < 5 then
+    (* too few samples for a reliable estimate *)
+    infinity
+  else
+    let variance = Moving_variance.get (x.variance) in
+    sqrt variance
 
 let update_contrib (x : contribution) v =
+  assert (v >= 0.);
   Moving_variance.update x.variance v;
   x.last <- v

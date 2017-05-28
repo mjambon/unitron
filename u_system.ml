@@ -9,7 +9,7 @@ type time = int
 
 type t = {
   (* Parameters *)
-  window: int;
+  window_length: int;
     (* Reinforcement time window *)
 
   goal_function : time -> float;
@@ -24,14 +24,14 @@ type t = {
 }
 
 let create
-    ~window
+    ~window_length
     ~goal_function
     ~read_active_controls
     ~get_control
     ~get_action =
-  let recent_acts = U_recent_acts.create window in
+  let recent_acts = U_recent_acts.create window_length in
   {
-    window;
+    window_length;
     goal_function;
     read_active_controls;
     get_control;

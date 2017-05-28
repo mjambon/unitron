@@ -20,7 +20,7 @@ let create_set () =
   create (fun x -> x)
 
 let get x k =
-  try Some (Hashtbl.find x.tbl)
+  try Some (Hashtbl.find x.tbl k)
   with Not_found -> None
 
 let add x v =

@@ -2,13 +2,14 @@
    Reinforcement step.
 *)
 
+open U_log
 open U_system
 
 let adjust_partial_contribution ~delta ~total_weight x =
   assert (total_weight > 0.);
   let w = U_control.get_weight x in
   let new_contrib = U_control.(x.last) +. (w /. total_weight) *. delta in
-  U_control.update_contrib x new_contrib
+  U_control.update_contrib x (max 0. new_contrib)
 
 let adjust_infinite_contributions ~delta contributions =
   let infinite_contributions =
@@ -32,6 +33,8 @@ let adjust_contributions contributions feedback =
       0. contributions
   in
   let delta = feedback -. prediction in
+  logf "feedback: %g, delta: %g, total_weight: %g"
+    feedback delta total_weight;
   if total_weight = 0. || delta = 0. then
     ()
   else if total_weight > 0. && total_weight < infinity then
