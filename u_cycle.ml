@@ -45,5 +45,13 @@ let step (x : U_system.t) t =
   let feedback = x.goal_function t in
   U_learn.learn x feedback
 
-let loop ?max_iter system =
-  U_loop.run ?max_iter (step system)
+let loop
+    ?max_iter
+    ?(before_step = fun t -> ())
+    ?(after_step = fun t -> ())
+    system =
+  U_loop.run ?max_iter (fun t ->
+    before_step t;
+    step system t;
+    after_step t
+  )

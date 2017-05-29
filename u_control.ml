@@ -7,6 +7,8 @@
    same time step, the action will run just once.
 *)
 
+open Printf
+
 type contribution = {
   mutable last: float;
   variance: Moving_variance.state;
@@ -77,3 +79,21 @@ let update_contrib (x : contribution) v =
   assert (v >= 0.);
   Moving_variance.update x.variance v;
   x.last <- v
+
+let info_of_contributions a =
+  let strings =
+    Array.mapi (fun age x ->
+      let v = x.variance in
+      let mean = Moving_variance.get_average v in
+      let stdev = sqrt (Moving_variance.get v) in
+      sprintf "%i:(m:%g, s:%g)"
+        age
+        mean stdev
+    ) a
+  in
+  String.concat " " (Array.to_list strings)
+
+let to_info x =
+  sprintf "control %s: [%s]"
+    (U_controlid.to_string x.id)
+    (info_of_contributions x.contributions)

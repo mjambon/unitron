@@ -58,6 +58,14 @@ let of_list_full l get_key =
 let iter x f =
   Hashtbl.iter (fun k v -> f v) x.tbl
 
+let sort x =
+  let l = to_list x in
+  let get_key = x.get_key in
+  List.sort (fun a b -> compare (get_key a) (get_key b)) l
+
+let iter_ordered x f =
+  List.iter f (sort x)
+
 let fold x acc f =
   Hashtbl.fold (fun k v acc -> f v acc) x.tbl acc
 

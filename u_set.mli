@@ -43,6 +43,9 @@ val pop : ('k, 'v) t -> 'k -> 'v option
 val to_list : ('k, 'v) t -> 'v list
   (* List the elements. *)
 
+val sort : ('k, 'v) t -> 'v list
+  (* List and sort the elements based on their keys. *)
+
 val of_list : 'a list -> 'a set
   (* Create a set from a list of elements. Elements must be suitable keys. *)
 
@@ -51,6 +54,10 @@ val of_list_full : 'v list -> ('v -> 'k) -> ('k, 'v) t
 
 val iter : ('k, 'v) t -> ('v -> unit) -> unit
   (* Iterate over the elements in no particular order. *)
+
+val iter_ordered : ('k, 'v) t -> ('v -> unit) -> unit
+  (* Iterate over the elements in the order defined by the keys,
+     which involves a sorting step. *)
 
 val fold : ('k, 'v) t -> 'acc -> ('v -> 'acc -> 'acc) -> 'acc
   (* Fold over the elements in no particular order. *)

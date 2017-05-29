@@ -6,10 +6,29 @@ open U_log
 open U_system
 
 let adjust_partial_contribution ~delta ~total_weight x =
-  assert (total_weight > 0.);
   let w = U_control.get_weight x in
-  let new_contrib = U_control.(x.last) +. (w /. total_weight) *. delta in
+  let share =
+    if w = 0. then
+      0.05
+    else
+      w /. total_weight
+  in
+  let new_contrib =
+    U_control.(x.last) +. share *. delta
+  in
   U_control.update_contrib x (max 0. new_contrib)
+
+(*
+   Adjust the value of each contribution, in the case where
+   the weight of each contribution is known with enough confidence.
+*)
+let adjust_partial_contributions ~delta ~total_weight contributions =
+  List.iter (fun x ->
+    adjust_partial_contribution
+      ~delta
+      ~total_weight
+      x
+  ) contributions
 
 let adjust_infinite_contributions ~delta contributions =
   let infinite_contributions =
@@ -35,12 +54,8 @@ let adjust_contributions contributions feedback =
   let delta = feedback -. prediction in
   logf "feedback: %g, delta: %g, total_weight: %g"
     feedback delta total_weight;
-  if total_weight = 0. || delta = 0. then
-    ()
-  else if total_weight > 0. && total_weight < infinity then
-    List.iter
-      (fun x -> adjust_partial_contribution ~delta ~total_weight x)
-      contributions
+  if total_weight >= 0. && total_weight < infinity then
+    adjust_partial_contributions ~delta ~total_weight contributions
   else if total_weight = infinity then
     adjust_infinite_contributions ~delta contributions
   else
