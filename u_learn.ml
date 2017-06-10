@@ -7,16 +7,18 @@ open U_system
 
 let adjust_partial_contribution ~delta ~total_weight x =
   let w = U_control.get_weight x in
+  let share = w /. total_weight in
+  assert (share >= 0.);
   let share =
-    if w = 0. then
-      0.05
-    else
-      w /. total_weight
+    (* Hack intended to correct for any initial underestimation
+       of the standard deviation and for sudden changes of a contribution
+       previously estimated with high certainty. *)
+    max 0.001 share
   in
   let new_contrib =
     U_control.(x.last) +. share *. delta
   in
-  U_control.update_contrib x (max 0. new_contrib)
+  U_control.update_contrib x new_contrib
 
 (*
    Adjust the value of each contribution, in the case where
