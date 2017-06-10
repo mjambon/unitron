@@ -31,11 +31,11 @@ LIBSOURCES = \
   u_tests.ml
 
 build: META
-	ocamlfind ocamlc -a -o unitron.cma -annot -package "$(PACKAGES)" \
+	ocamlfind ocamlc -a -o unitron.cma -bin-annot -package "$(PACKAGES)" \
 		$(LIBSOURCES)
-	ocamlfind ocamlopt -a -o unitron.cmxa -annot -package "$(PACKAGES)" \
+	ocamlfind ocamlopt -a -o unitron.cmxa -bin-annot -package "$(PACKAGES)" \
 		$(LIBSOURCES)
-	ocamlfind ocamlopt -o demo -annot -linkpkg -package "$(PACKAGES)" \
+	ocamlfind ocamlopt -o demo -bin-annot -linkpkg -package "$(PACKAGES)" \
 		unitron.cmxa demo_main.ml
 
 run: build
@@ -56,4 +56,4 @@ reinstall:
 	$(MAKE) uninstall; $(MAKE) install
 
 clean:
-	rm -f *~ *.cm[ioxa] *.cmx[as] *.o *.a *.annot demo META
+	rm -f *~ *.cm[ioxat] *.cmti *.cmx[as] *.o *.a *.annot demo META
