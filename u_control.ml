@@ -76,7 +76,7 @@ let get_weight (x : contribution) =
     sqrt variance
 
 let update_contrib (x : contribution) v =
-  assert (v >= 0.);
+  assert (v = v);
   Moving_variance.update x.variance v;
   x.last <- v
 

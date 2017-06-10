@@ -63,7 +63,7 @@ let create_system () =
       (if !a_was_active then 1.
        else 0.)
       +.
-      (if !b_was_active then 0.1
+      (if !b_was_active then (-0.1)
        else 0.)
     in
     let noise = 0. in
