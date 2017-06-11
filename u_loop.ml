@@ -25,9 +25,10 @@ let run ?max_iter f =
       loop 0
     )
   in
-  let iterations_per_second = float iter_count /. dt in
+  let step_duration = dt /. float iter_count in
   U_log.logf "total time: %.6f s" dt;
-  U_log.logf "iterations per second: %.2g" iterations_per_second;
+  U_log.logf "step duration: %.2g ms, %.2g KHz"
+    (1e3 *. step_duration) (1. /. (1e3 *. step_duration));
   U_log.flush ()
 
 let test () =

@@ -10,8 +10,25 @@ let print_controls controls =
     logf "%s" (U_control.to_info x)
   )
 
+(*
+   Types of tests we want here:
+   - two independent actions with positive contributions
+   - one positive, one negative
+   - one very large, one very small
+   - one constant, one noisy
+   - two noisy
+   - one action implying the other one
+   - constant global noise
+   - fluctuating global noise independent from the actions
+
+   Not covered here:
+   - any number of actions other than 2
+   - multiple controls for the same action
+   - longer window
+*)
+
 let create_system () =
-  let window_length = 1 in
+  let window_length = 10 in
   let moving_avg_cst = 0.1 in
 
   let controls = U_control.create_set () in

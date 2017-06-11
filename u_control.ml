@@ -86,7 +86,7 @@ let info_of_contributions a =
       let v = x.variance in
       let mean = Moving_variance.get_average v in
       let stdev = sqrt (Moving_variance.get v) in
-      sprintf "%i:(m:%g, s:%g)"
+      sprintf "%i:(%.2g, %.2g)"
         age
         mean stdev
     ) a

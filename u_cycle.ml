@@ -2,6 +2,7 @@
    Definition of one cycle (step) corresponding to one time increment.
 *)
 
+open U_log
 open U_system
 
 let register_active_controls x t =
@@ -45,13 +46,37 @@ let step (x : U_system.t) t =
   let feedback = x.goal_function t in
   U_learn.learn x feedback
 
+(*
+   Create an accumulator for computing an arithmetic mean, using O(1) memory.
+*)
+let create_mean () =
+  let n = ref 0 in
+  let sum = ref 0. in
+  let add x =
+    incr n;
+    sum := !sum +. x
+  in
+  let get () =
+    !sum /. float !n
+  in
+  add, get
+
 let loop
     ?max_iter
     ?(before_step = fun t -> ())
     ?(after_step = fun t -> ())
     system =
+  let add_duration, get_mean_duration = create_mean () in
   U_loop.run ?max_iter (fun t ->
     before_step t;
-    step system t;
+    let (), step_duration =
+      U_perf.time (fun () ->
+        step system t
+      )
+    in
+    add_duration step_duration;
     after_step t
-  )
+  );
+  let step_duration = get_mean_duration () in
+  logf "effective step duration: %.2g ms, %.2g KHz"
+    (1e3 *. step_duration) (1. /. (1e3 *. step_duration))
