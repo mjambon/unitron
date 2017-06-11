@@ -11,12 +11,8 @@ let print_controls controls =
   )
 
 (*
-   Types of tests we want here:
-   - two independent actions with positive contributions
-   - one positive, one negative
-   - one very large, one very small
-   - one constant, one noisy
-   - two noisy
+   More tests we want here:
+   - two noisy contributions
    - one action implying the other one
    - constant global noise
    - fluctuating global noise independent from the actions
@@ -57,10 +53,13 @@ let check_learned_contributions ~control ~contrib0 ~tolerance =
         )
   )
 
+let default_contrib_a = 1.
+let default_contrib_b = 0.1
+
 let test_system
   ?(max_iter = 1000)
-  ?(contrib_a = 1.)
-  ?(contrib_b = 0.1)
+  ?(contrib_a = default_contrib_a)
+  ?(contrib_b = default_contrib_b)
   ?(tolerance_a = 0.05)
   ?(tolerance_b = 0.05)
   ?(noise_a = fun t -> 0.)
@@ -158,9 +157,34 @@ let test_system
     ~tolerance:tolerance_b;
   true
 
-let test () =
+let test_default () =
   test_system ()
 
+let test_negative () =
+  test_system
+    ~contrib_b:(-0.1)
+    ()
+
+let test_large_difference () =
+  test_system
+    ~contrib_a:(10.)
+    ~contrib_b:(0.1)
+    ~tolerance_a:0.1
+    ~tolerance_b:0.001
+    ~determine_actions_ab: (fun t -> pick 0.5, pick 0.5)
+    ()
+
+let test_noisy_contribution () =
+  assert (default_contrib_a = 1.);
+  test_system
+    ~noise_a:(fun _ ->
+      Random.float 0.2 -. Random.float 0.2
+    )
+    ()
+
 let tests = [
-  "main", test;
+  "default", test_default;
+  "negative", test_negative;
+  "large difference", test_large_difference;
+  "noisy contribution", test_noisy_contribution;
 ]
