@@ -35,4 +35,5 @@ let run_tests tests =
   List.iter print_result results;
   let passed = List.length (List.filter snd results) in
   let total = List.length results in
-  print_summary passed total
+  print_summary passed total;
+  passed = total

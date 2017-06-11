@@ -13,4 +13,5 @@ META
 *.cmxs
 *.cmxa
 
-demo
+u_test
+*.log

@@ -80,6 +80,20 @@ let update_contrib (x : contribution) v =
   Moving_variance.update x.variance v;
   x.last <- v
 
+let get_contribution x age =
+  x.contributions.(age)
+
+let get_contribution_average x age =
+  Moving_variance.get_average (get_contribution x age).variance
+
+let iter_contributions x f =
+  Array.iteri (fun age x ->
+    let v = x.variance in
+    let average = Moving_variance.get_average v in
+    let variance = Moving_variance.get v in
+    f ~age ~average ~variance
+  ) x.contributions
+
 let info_of_contributions a =
   let strings =
     Array.mapi (fun age x ->

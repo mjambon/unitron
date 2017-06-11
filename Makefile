@@ -1,6 +1,6 @@
 .PHONY: default build run utop install uninstall reinstall clean
 
-default: run
+default: build
 
 # Launch utop with a suitable value for OCAMLPATH
 utop:
@@ -35,11 +35,11 @@ build: META
 		$(LIBSOURCES)
 	ocamlfind ocamlopt -a -o unitron.cmxa -bin-annot -package "$(PACKAGES)" \
 		$(LIBSOURCES)
-	ocamlfind ocamlopt -o demo -bin-annot -linkpkg -package "$(PACKAGES)" \
-		unitron.cmxa demo_main.ml
+	ocamlfind ocamlopt -o u_test -bin-annot -linkpkg -package "$(PACKAGES)" \
+		unitron.cmxa u_test_main.ml
 
-run: build
-	./demo
+test: build
+	./u_test > test.log 2>&1
 
 META: META.in
 	echo 'requires = "$(PACKAGES)"' > META
@@ -56,4 +56,5 @@ reinstall:
 	$(MAKE) uninstall; $(MAKE) install
 
 clean:
-	rm -f *~ *.cm[ioxat] *.cmti *.cmx[as] *.o *.a *.annot demo META
+	rm -f *~ *.cm[ioxat] *.cmti *.cmx[as] *.o *.a *.annot demo META \
+    u_test test.log

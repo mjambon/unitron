@@ -20,14 +20,54 @@ let print_controls controls =
    - one action implying the other one
    - constant global noise
    - fluctuating global noise independent from the actions
+   - longer window
 
    Not covered here:
    - any number of actions other than 2
    - multiple controls for the same action
-   - longer window
+   - delayed contributions
 *)
 
-let create_system () =
+(*
+   Return true with probability `proba`.
+*)
+let pick proba =
+  Random.float 1. < proba
+
+let check_expectation ~expected ~tolerance ~obtained =
+  let ok =
+    obtained >= expected -. tolerance
+    && obtained <= expected +. tolerance
+  in
+  if not ok then
+    logf "failed expected:%g tolerance:%g obtained:%g"
+      expected tolerance obtained;
+  ok
+
+let check_learned_contributions ~control ~contrib0 ~tolerance =
+  U_control.iter_contributions control (fun ~age ~average ~variance ->
+    match age with
+    | 0 ->
+        assert (
+          check_expectation ~expected:contrib0 ~tolerance ~obtained:average
+        )
+    | _ ->
+        assert (
+          check_expectation ~expected:0. ~tolerance ~obtained:average
+        )
+  )
+
+let test_system
+  ?(max_iter = 1000)
+  ?(contrib_a = 1.)
+  ?(contrib_b = 0.1)
+  ?(tolerance_a = 0.05)
+  ?(tolerance_b = 0.05)
+  ?(noise_a = fun t -> 0.)
+  ?(noise_b = fun t -> 0.)
+  ?(noise = fun t -> 0.)
+  ?(determine_actions_ab = fun t -> pick 0.6, pick 0.9)
+  () =
   let window_length = 10 in
   let moving_avg_cst = 0.1 in
 
@@ -44,12 +84,6 @@ let create_system () =
 
   let controlid_a = U_controlid.of_string "A" in
   add_control controlid_a actionid_a;
-  let read_a add =
-    if Random.float 1. < 0.6 then (
-      logf "A*";
-      add controlid_a
-    )
-  in
 
   (* B has its own frequency and constant contribution, independent from A. *)
   let b_was_active = ref false in
@@ -58,33 +92,34 @@ let create_system () =
 
   let controlid_b = U_controlid.of_string "B" in
   add_control controlid_b actionid_b;
-  let read_b add =
-    if Random.float 1. < 0.9 then (
-      logf "B*";
-      add controlid_b
-    )
-  in
 
   let before_step t =
     logf "--------------------------------------------------------------";
     a_was_active := false;
     b_was_active := false
   in
+
   let read_active_controls t add =
-    read_a add;
-    read_b add
+    let a, b = determine_actions_ab t in
+    if a then (
+      logf "A*";
+      add controlid_a
+    );
+    if b then (
+      logf "B*";
+      add controlid_b
+    )
   in
 
   let goal_function t =
     let contrib =
-      (if !a_was_active then 1.
+      (if !a_was_active then contrib_a +. noise_a t
        else 0.)
       +.
-      (if !b_was_active then (-0.1)
+      (if !b_was_active then contrib_b +. noise_b t
        else 0.)
     in
-    let noise = 0. in
-    contrib +. noise
+    contrib +. noise t
   in
 
   let get_control id =
@@ -105,16 +140,26 @@ let create_system () =
   let after_step t =
     print_controls controls
   in
-  system, before_step, after_step
-
-let test () =
-  let system, before_step, after_step = create_system () in
   U_cycle.loop
-    ~max_iter:100
+    ~max_iter
     ~before_step
     ~after_step
     system;
+
+  let control_a = get_control controlid_a in
+  let control_b = get_control controlid_b in
+  check_learned_contributions
+    ~control:control_a
+    ~contrib0:contrib_a
+    ~tolerance:tolerance_a;
+  check_learned_contributions
+    ~control:control_b
+    ~contrib0:contrib_b
+    ~tolerance:tolerance_b;
   true
+
+let test () =
+  test_system ()
 
 let tests = [
   "main", test;

@@ -3,6 +3,7 @@
 *)
 
 let main () =
-  U_tests.run ()
+  if not (U_tests.run ()) then
+    exit 1
 
 let () = main ()
