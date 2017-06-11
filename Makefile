@@ -26,7 +26,7 @@ LIBSOURCES = \
   u_learn.ml \
   u_cycle.mli u_cycle.ml \
 \
-  u_eval_simple.ml \
+  u_eval.ml \
 \
   u_tests.ml
 

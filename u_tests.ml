@@ -9,7 +9,7 @@ let tests = U_test.flatten [
   "U_recent", U_recent.tests;
 
   (* Evaluation of the behavior of system for several scenarios *)
-  "U_eval_simple", U_eval_simple.tests;
+  "U_eval", U_eval.tests;
 ]
 
 let run () =

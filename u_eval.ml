@@ -1,5 +1,11 @@
 (*
-   A very simple setup to make sure we don't have a major bug.
+   A very simple setup to make sure we don't have a major bug
+   and to evaluate the behavior of the system in different conditions.
+
+   Not tested at this point:
+   - any number of actions other than 2
+   - multiple controls for the same action
+   - delayed contributions
 *)
 
 open Printf
@@ -9,20 +15,6 @@ let print_controls controls =
   U_set.iter_ordered controls (fun x ->
     logf "%s" (U_control.to_info x)
   )
-
-(*
-   More tests we want here:
-   - two noisy contributions
-   - one action implying the other one
-   - constant global noise
-   - fluctuating global noise independent from the actions
-   - longer window
-
-   Not covered here:
-   - any number of actions other than 2
-   - multiple controls for the same action
-   - delayed contributions
-*)
 
 (*
    Return true with probability `proba`.
@@ -182,9 +174,73 @@ let test_noisy_contribution () =
     )
     ()
 
+(* B active => A active *)
+let test_subaction () =
+  let determine_actions_ab t =
+    let a = pick 0.5 in
+    let b = a && pick 0.5 in
+    a, b
+  in
+  test_system
+    ~determine_actions_ab
+    ()
+
+let test_global_noise () =
+  assert (default_contrib_a = 1.);
+  assert (default_contrib_b = 0.1);
+  let noise t =
+    Random.float 0.2 -. 0.1
+  in
+  test_system
+    ~noise
+    ()
+
+let test_noisy_contributions () =
+  assert (default_contrib_a = 1.);
+  assert (default_contrib_b = 0.1);
+  let noise_a t =
+    Random.float 1. -. 0.5
+  in
+  let noise_b t =
+    Random.float 0.1 -. 0.05
+  in
+  test_system
+    ~tolerance_a: 0.1
+    ~tolerance_b: 0.08
+    ~noise_a
+    ~noise_b
+    ()
+
+(*
+   Change the contributions of A and B suddenly, and see if we can adjust
+   the predictions.
+*)
+let test_adaptation () =
+  assert (default_contrib_a = 1.);
+  assert (default_contrib_b = 0.1);
+  let max_iter = 200 in
+  let noise_a t =
+    if t < 100 then 1.
+    else 0.
+  in
+  let noise_b t =
+    if t < 50 then (-0.1)
+    else 0.
+  in
+  test_system
+    ~max_iter
+    ~noise_a
+    ~noise_b
+    ~determine_actions_ab: (fun t -> pick 0.5, pick 0.5)
+    ()
+
 let tests = [
   "default", test_default;
   "negative", test_negative;
   "large difference", test_large_difference;
   "noisy contribution", test_noisy_contribution;
+  "subaction", test_subaction;
+  "global noise", test_global_noise;
+  "noisy contributions", test_noisy_contributions;
+  "adaptation", test_adaptation;
 ]
