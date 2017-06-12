@@ -48,8 +48,15 @@ let check_learned_contributions ~control ~contrib0 ~tolerance =
 let default_contrib_a = 1.
 let default_contrib_b = 0.1
 
+(*
+   TODO: change tolerance criteria to allow legitimate outliers.
+   Possible solution:
+   Run the same test multiple times and for each contribution
+   in each control, compute mean and standard deviation,
+   and compare to expectations.
+*)
 let test_system
-  ?(max_iter = 1000)
+  ?(max_iter = 100)
   ?(contrib_a = default_contrib_a)
   ?(contrib_b = default_contrib_b)
   ?(tolerance_a = 0.05)
@@ -57,7 +64,7 @@ let test_system
   ?(noise_a = fun t -> 0.)
   ?(noise_b = fun t -> 0.)
   ?(noise = fun t -> 0.)
-  ?(determine_actions_ab = fun t -> pick 0.6, pick 0.9)
+  ?(determine_actions_ab = fun t -> pick 0.5, pick 0.5)
   () =
   let window_length = 10 in
   let moving_avg_cst = 0.1 in
