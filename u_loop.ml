@@ -12,6 +12,7 @@ let run ?max_iter f =
     in
     if ok then (
       f t;
+      U_log.flush ();
       loop (t + 1)
     )
   in
@@ -22,7 +23,9 @@ let run ?max_iter f =
   in
   let (), dt =
     U_perf.time (fun () ->
-      loop 0
+      U_log.set_mode `Skip;
+      loop 0;
+      U_log.set_mode `Full
     )
   in
   let step_duration = dt /. float iter_count in

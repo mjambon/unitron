@@ -19,5 +19,14 @@ val set_time : int -> unit
      meant to be an iteration number rather than real time.
      This flushes any buffered log output. *)
 
+type mode = [ `Full | `Skip ]
+
+val set_mode : mode -> unit
+  (* set the logging mode or "level".
+     `Skip` will result in `logf` printing only if the current time
+     has a single leading nonzero digit followed by zeroes.
+     The goal of the skip mode is to produce less and less output
+     as the number of steps increases. *)
+
 val flush : unit -> unit
   (* flush buffered log output. *)
