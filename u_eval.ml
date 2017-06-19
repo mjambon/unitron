@@ -11,6 +11,15 @@
 open Printf
 open U_log
 
+let default_global_iter = 30
+let default_max_iter = 100
+let default_window_length = 10
+let default_contrib_a = 1.
+let default_contrib_b = 0.1
+let default_tolerance_a = 0.05
+let default_tolerance_b = 0.05
+let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
+
 let print_controls controls =
   U_set.iter_ordered controls (fun x ->
     logf "%s" (U_control.to_info x)
@@ -37,12 +46,6 @@ let print_contrib_stats controlid contrib_stat_array =
       (U_controlid.to_string controlid) age
       mean stdev
   ) contrib_stat_array
-
-(*
-   Return true with probability `proba`.
-*)
-let pick proba =
-  Random.float 1. < proba
 
 let check_expectation
     ~system_name
@@ -89,9 +92,6 @@ let check_learned_contributions
         )
   ) contrib_stat
 
-let default_contrib_a = 1.
-let default_contrib_b = 0.1
-
 (*
    TODO: change tolerance criteria to allow legitimate outliers.
    Possible solution:
@@ -101,7 +101,7 @@ let default_contrib_b = 0.1
 *)
 let test_system_once
   ?inner_log_mode
-  ?(max_iter = 100)
+  ?(max_iter = default_max_iter)
   ~window_length
   ~controlid_a
   ~controlid_b
@@ -110,7 +110,7 @@ let test_system_once
   ?(noise_a = fun t -> 0.)
   ?(noise_b = fun t -> 0.)
   ?(noise = fun t -> 0.)
-  ?(determine_actions_ab = fun t -> pick 0.5, pick 0.5)
+  ?(determine_actions_ab = default_determine_actions_ab)
   () =
   let moving_avg_cst = 0.1 in
 
@@ -198,13 +198,13 @@ let test_system_once
 *)
 let test_system
     ~name
-    ?(global_iter = 30)
+    ?(global_iter = default_global_iter)
     ?max_iter
-    ?(window_length = 10)
+    ?(window_length = default_window_length)
     ?(contrib_a = default_contrib_a)
     ?(contrib_b = default_contrib_b)
-    ?(tolerance_a = 0.05)
-    ?(tolerance_b = 0.05)
+    ?(tolerance_a = default_tolerance_a)
+    ?(tolerance_b = default_tolerance_b)
     ?noise_a
     ?noise_b
     ?noise
@@ -275,7 +275,7 @@ let test_large_difference () =
     ~contrib_b:(0.1)
     ~tolerance_a:0.5
     ~tolerance_b:0.5
-    ~determine_actions_ab: (fun t -> pick 0.5, pick 0.5)
+    ~determine_actions_ab: (fun t -> U_random.pick 0.5, U_random.pick 0.5)
     ()
 
 let test_noisy_contribution () =
@@ -290,8 +290,8 @@ let test_noisy_contribution () =
 (* B active => A active *)
 let test_subaction () =
   let determine_actions_ab t =
-    let a = pick 0.5 in
-    let b = a && pick 0.5 in
+    let a = U_random.pick 0.5 in
+    let b = a && U_random.pick 0.5 in
     a, b
   in
   test_system
@@ -349,7 +349,7 @@ let test_adaptation () =
     ~max_iter
     ~noise_a
     ~noise_b
-    ~determine_actions_ab: (fun t -> pick 0.5, pick 0.5)
+    ~determine_actions_ab: (fun t -> U_random.pick 0.5, U_random.pick 0.5)
     ()
 
 let tests = [

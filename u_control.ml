@@ -68,10 +68,12 @@ let get set id =
 let get_weight (x : contribution) =
   let mv = x.variance in
   let n = Moving_variance.get_count mv in
-  if n < 5 then
-    (* too few samples for a reliable estimate *)
+  if n <= 1 then
+    (* Assign an infinite weight, which is usable, unlike a NaN. *)
     infinity
   else
+    (* Initially, the estimate of the standard deviation is very coarse.
+       Not sure if or how it should be tweaked for better results. *)
     let variance = Moving_variance.get (x.variance) in
     sqrt variance
 

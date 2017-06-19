@@ -14,6 +14,7 @@ LIBSOURCES = \
   u_perf.ml \
   u_set.mli u_set.ml \
   u_stat.ml \
+  u_random.ml \
 \
   u_permanent_id.ml \
   u_controlid.ml \
