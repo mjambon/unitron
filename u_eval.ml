@@ -273,8 +273,8 @@ let test_large_difference () =
     ~name:"large_difference"
     ~contrib_a:(10.)
     ~contrib_b:(0.1)
-    ~tolerance_a:0.1
-    ~tolerance_b:0.001
+    ~tolerance_a:0.5
+    ~tolerance_b:0.5
     ~determine_actions_ab: (fun t -> pick 0.5, pick 0.5)
     ()
 
@@ -296,6 +296,7 @@ let test_subaction () =
   in
   test_system
     ~name:"subaction"
+    ~max_iter:200
     ~determine_actions_ab
     ()
 
