@@ -46,28 +46,14 @@ let step (x : U_system.t) t =
   let feedback = x.goal_function t in
   U_learn.learn x feedback
 
-(*
-   Create an accumulator for computing an arithmetic mean, using O(1) memory.
-*)
-let create_mean () =
-  let n = ref 0 in
-  let sum = ref 0. in
-  let add x =
-    incr n;
-    sum := !sum +. x
-  in
-  let get () =
-    !sum /. float !n
-  in
-  add, get
-
 let loop
+    ?inner_log_mode
     ?max_iter
     ?(before_step = fun t -> ())
     ?(after_step = fun t -> ())
     system =
-  let add_duration, get_mean_duration = create_mean () in
-  U_loop.run ?max_iter (fun t ->
+  let add_duration, get_mean_duration = U_stat.create_mean_acc () in
+  U_loop.run ?inner_log_mode ?max_iter (fun t ->
     before_step t;
     let (), step_duration =
       U_perf.time (fun () ->

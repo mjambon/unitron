@@ -94,6 +94,14 @@ let iter_contributions x f =
     f ~age ~average ~variance
   ) x.contributions
 
+let map_contributions x f =
+  Array.mapi (fun age x ->
+    let v = x.variance in
+    let average = Moving_variance.get_average v in
+    let variance = Moving_variance.get v in
+    f ~age ~average ~variance
+  ) x.contributions
+
 let info_of_contributions a =
   let strings =
     Array.mapi (fun age x ->

@@ -14,13 +14,14 @@ let flatten ll =
   )
 
 let run_test (name, f) =
-  eprintf "Test %s\n%!" name;
+  eprintf "test %s: START\n%!" name;
   let success =
     try f ()
     with e ->
       eprintf "Exception %s\n%!" (U_log.string_of_exn e);
       false
   in
+  eprintf "test %s: %s\n%!" name (if success then "OK" else "ERROR");
   name, success
 
 let print_result (name, success) =

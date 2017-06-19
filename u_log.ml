@@ -16,17 +16,22 @@ let out_channel = stderr
 let flush () =
   Pervasives.flush out_channel
 
-type level = [ `Opt | `Info ]
-
-let time = ref 0
+let time = ref None
 
 let set_time t =
-  time := t
+  time := Some t
+
+let clear_time () =
+  time := None
 
 let log s =
-  fprintf out_channel "[%i] %s\n"
-    !time
-    s
+  match !time with
+  | Some t ->
+      fprintf out_channel "[%i] %s\n"
+        t s
+  | None ->
+      fprintf out_channel "[] %s\n"
+        s
 
 let rec has_only_one_nonzero_digit n =
   if n < 0 then
@@ -38,20 +43,28 @@ let rec has_only_one_nonzero_digit n =
   else
     false
 
-type mode = [ `Full | `Skip ]
+type mode = [ `Full | `Skip | `Off ]
 
 let mode = ref (`Full : mode)
 
 let set_mode x =
   mode := x
 
+let should_skip () =
+  match !time with
+  | None ->
+      true
+  | Some t ->
+      not (has_only_one_nonzero_digit t)
+
 let logf msgf =
   let print =
     match !mode with
-    | `Skip when not (has_only_one_nonzero_digit !time) ->
+    | `Skip when should_skip () ->
         (fun s -> ())
-    | _ ->
+    | `Full | `Skip ->
         log
+    | `Off ->
+        (fun s -> ())
   in
   Printf.kprintf print msgf
-

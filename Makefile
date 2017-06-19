@@ -13,6 +13,7 @@ LIBSOURCES = \
   u_test.ml \
   u_perf.ml \
   u_set.mli u_set.ml \
+  u_stat.ml \
 \
   u_permanent_id.ml \
   u_controlid.ml \

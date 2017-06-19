@@ -16,34 +16,78 @@ let print_controls controls =
     logf "%s" (U_control.to_info x)
   )
 
+let get_average_contributions window_length acc =
+  let stat =
+    Array.init window_length (fun age ->
+      U_stat.create_stdev_acc ()
+    )
+  in
+  List.iter (fun control ->
+    U_control.iter_contributions control (fun ~age ~average ~variance ->
+      let add, _, _ = stat.(age) in
+      add average
+    )
+  ) acc;
+
+  Array.map (fun (_, _, get_mean_and_stdev) -> get_mean_and_stdev ()) stat
+
+let print_contrib_stats controlid contrib_stat_array =
+  Array.iteri (fun age (mean, stdev) ->
+    logf "contribution %s[%i]: mean %.2g, stdev %.2g"
+      (U_controlid.to_string controlid) age
+      mean stdev
+  ) contrib_stat_array
+
 (*
    Return true with probability `proba`.
 *)
 let pick proba =
   Random.float 1. < proba
 
-let check_expectation ~expected ~tolerance ~obtained =
+let check_expectation
+    ~system_name
+    ~controlid
+    ~age
+    ~expected
+    ~tolerance
+    ~obtained =
   let ok =
     obtained >= expected -. tolerance
     && obtained <= expected +. tolerance
   in
   if not ok then
-    logf "failed expected:%g tolerance:%g obtained:%g"
+    logf "ERROR %s %s[%i] expected:%g tolerance:%g obtained:%g"
+      system_name
+      (U_controlid.to_string controlid) age
       expected tolerance obtained;
   ok
 
-let check_learned_contributions ~control ~contrib0 ~tolerance =
-  U_control.iter_contributions control (fun ~age ~average ~variance ->
+let check_learned_contributions
+    ~system_name ~controlid
+    ~contrib0 ~tolerance contrib_stat =
+  Array.iteri (fun age (contrib_mean, contrib_stdev) ->
     match age with
     | 0 ->
         assert (
-          check_expectation ~expected:contrib0 ~tolerance ~obtained:average
+          check_expectation
+            ~system_name
+            ~controlid
+            ~age
+            ~expected:contrib0
+            ~tolerance
+            ~obtained:contrib_mean
         )
     | _ ->
         assert (
-          check_expectation ~expected:0. ~tolerance ~obtained:average
+          check_expectation
+            ~system_name
+            ~controlid
+            ~age
+            ~expected:0.
+            ~tolerance
+            ~obtained:contrib_mean
         )
-  )
+  ) contrib_stat
 
 let default_contrib_a = 1.
 let default_contrib_b = 0.1
@@ -55,18 +99,19 @@ let default_contrib_b = 0.1
    in each control, compute mean and standard deviation,
    and compare to expectations.
 *)
-let test_system
+let test_system_once
+  ?inner_log_mode
   ?(max_iter = 100)
-  ?(contrib_a = default_contrib_a)
-  ?(contrib_b = default_contrib_b)
-  ?(tolerance_a = 0.05)
-  ?(tolerance_b = 0.05)
+  ~window_length
+  ~controlid_a
+  ~controlid_b
+  ~contrib_a
+  ~contrib_b
   ?(noise_a = fun t -> 0.)
   ?(noise_b = fun t -> 0.)
   ?(noise = fun t -> 0.)
   ?(determine_actions_ab = fun t -> pick 0.5, pick 0.5)
   () =
-  let window_length = 10 in
   let moving_avg_cst = 0.1 in
 
   let controls = U_control.create_set () in
@@ -80,7 +125,6 @@ let test_system
   let actionid_a = U_actionid.of_string "A" in
   U_action.add actionid_a (fun () -> a_was_active := true) actions;
 
-  let controlid_a = U_controlid.of_string "A" in
   add_control controlid_a actionid_a;
 
   (* B has its own frequency and constant contribution, independent from A. *)
@@ -88,7 +132,6 @@ let test_system
   let actionid_b = U_actionid.of_string "B" in
   U_action.add actionid_b (fun () -> b_was_active := true) actions;
 
-  let controlid_b = U_controlid.of_string "B" in
   add_control controlid_b actionid_b;
 
   let before_step t =
@@ -139,6 +182,7 @@ let test_system
     print_controls controls
   in
   U_cycle.loop
+    ?inner_log_mode
     ~max_iter
     ~before_step
     ~after_step
@@ -146,26 +190,87 @@ let test_system
 
   let control_a = get_control controlid_a in
   let control_b = get_control controlid_b in
+  (control_a, control_b)
+
+(*
+   We run the system from t=0 several times in order to get a sense
+   of the variability of the results.
+*)
+let test_system
+    ~name
+    ?(global_iter = 30)
+    ?max_iter
+    ?(window_length = 10)
+    ?(contrib_a = default_contrib_a)
+    ?(contrib_b = default_contrib_b)
+    ?(tolerance_a = 0.05)
+    ?(tolerance_b = 0.05)
+    ?noise_a
+    ?noise_b
+    ?noise
+    ?determine_actions_ab
+    () =
+
+  let controlid_a = U_controlid.of_string "A" in
+  let controlid_b = U_controlid.of_string "B" in
+  let acc_a = ref [] in
+  let acc_b = ref [] in
+  for i = 1 to global_iter do
+    let inner_log_mode =
+      if i = 1 then `Skip
+      else `Off
+    in
+    logf "--- Run %i/%i ---" i global_iter;
+    let control_a, control_b =
+      test_system_once
+        ~inner_log_mode
+        ?max_iter
+        ~window_length
+        ~controlid_a
+        ~controlid_b
+        ~contrib_a
+        ~contrib_b
+        ?noise_a
+        ?noise_b
+        ?noise
+        ?determine_actions_ab
+        ()
+    in
+    acc_a := control_a :: !acc_a;
+    acc_b := control_b :: !acc_b;
+  done;
+  let contrib_stat_a = get_average_contributions window_length !acc_a in
+  let contrib_stat_b = get_average_contributions window_length !acc_b in
+  print_contrib_stats controlid_a contrib_stat_a;
+  print_contrib_stats controlid_b contrib_stat_b;
   check_learned_contributions
-    ~control:control_a
+    ~system_name:name
+    ~controlid:controlid_a
     ~contrib0:contrib_a
-    ~tolerance:tolerance_a;
+    ~tolerance:tolerance_a
+    contrib_stat_a;
   check_learned_contributions
-    ~control:control_b
+    ~system_name:name
+    ~controlid:controlid_b
     ~contrib0:contrib_b
-    ~tolerance:tolerance_b;
+    ~tolerance:tolerance_b
+    contrib_stat_b;
   true
 
 let test_default () =
-  test_system ()
+  test_system
+    ~name:"default"
+    ()
 
 let test_negative () =
   test_system
+    ~name:"negative"
     ~contrib_b:(-0.1)
     ()
 
 let test_large_difference () =
   test_system
+    ~name:"large_difference"
     ~contrib_a:(10.)
     ~contrib_b:(0.1)
     ~tolerance_a:0.1
@@ -176,6 +281,7 @@ let test_large_difference () =
 let test_noisy_contribution () =
   assert (default_contrib_a = 1.);
   test_system
+    ~name:"noisy_contribution"
     ~noise_a:(fun _ ->
       Random.float 0.2 -. Random.float 0.2
     )
@@ -189,6 +295,7 @@ let test_subaction () =
     a, b
   in
   test_system
+    ~name:"subaction"
     ~determine_actions_ab
     ()
 
@@ -199,6 +306,7 @@ let test_global_noise () =
     Random.float 0.2 -. 0.1
   in
   test_system
+    ~name:"global_noise"
     ~noise
     ()
 
@@ -212,6 +320,7 @@ let test_noisy_contributions () =
     Random.float 0.1 -. 0.05
   in
   test_system
+    ~name:"noisy_contributions"
     ~tolerance_a: 0.1
     ~tolerance_b: 0.08
     ~noise_a
@@ -235,6 +344,7 @@ let test_adaptation () =
     else 0.
   in
   test_system
+    ~name:"adaptation"
     ~max_iter
     ~noise_a
     ~noise_b

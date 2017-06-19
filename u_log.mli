@@ -14,12 +14,12 @@ val logf : ('a, unit, string, unit) format4 -> 'a
   (* printf-like logging function, writes to stderr.
      Warning: it does not automatically flush the buffered output. *)
 
+val clear_time : unit -> unit
 val set_time : int -> unit
   (* set the time to be displayed by each call to `log` or `logf`,
-     meant to be an iteration number rather than real time.
-     This flushes any buffered log output. *)
+     meant to be an iteration number rather than real time. *)
 
-type mode = [ `Full | `Skip ]
+type mode = [ `Full | `Skip | `Off ]
 
 val set_mode : mode -> unit
   (* set the logging mode or "level".

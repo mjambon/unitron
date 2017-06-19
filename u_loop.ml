@@ -2,7 +2,7 @@
    Generic main loop.
 *)
 
-let run ?max_iter f =
+let run ?(inner_log_mode = `Skip) ?max_iter f =
   let rec loop t =
     U_log.set_time t;
     let ok =
@@ -23,8 +23,9 @@ let run ?max_iter f =
   in
   let (), dt =
     U_perf.time (fun () ->
-      U_log.set_mode `Skip;
+      U_log.set_mode inner_log_mode;
       loop 0;
+      U_log.clear_time ();
       U_log.set_mode `Full
     )
   in
