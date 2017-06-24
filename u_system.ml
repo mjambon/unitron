@@ -21,6 +21,8 @@ type t = {
   get_control : U_controlid.t -> U_control.t;
   get_action : U_actionid.t -> U_action.t;
   recent_acts : U_recent_acts.t;
+
+  observables : U_obs.t;
 }
 
 let create
@@ -37,4 +39,5 @@ let create
     get_control;
     get_action;
     recent_acts;
+    observables;
   }
