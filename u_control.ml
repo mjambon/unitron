@@ -74,8 +74,7 @@ let get_weight (x : contribution) =
   else
     (* Initially, the estimate of the standard deviation is very coarse.
        Not sure if or how it should be tweaked for better results. *)
-    let variance = Moving_variance.get (x.variance) in
-    sqrt variance
+    Moving_variance.get_stdev (x.variance)
 
 let update_contrib (x : contribution) v =
   assert (v = v);
@@ -92,16 +91,16 @@ let iter_contributions x f =
   Array.iteri (fun age x ->
     let v = x.variance in
     let average = Moving_variance.get_average v in
-    let variance = Moving_variance.get v in
-    f ~age ~average ~variance
+    let stdev = Moving_variance.get_stdev v in
+    f ~age ~average ~stdev
   ) x.contributions
 
 let map_contributions x f =
   Array.mapi (fun age x ->
     let v = x.variance in
     let average = Moving_variance.get_average v in
-    let variance = Moving_variance.get v in
-    f ~age ~average ~variance
+    let stdev = Moving_variance.get_stdev v in
+    f ~age ~average ~stdev
   ) x.contributions
 
 let info_of_contributions a =
@@ -109,7 +108,7 @@ let info_of_contributions a =
     Array.mapi (fun age x ->
       let v = x.variance in
       let mean = Moving_variance.get_average v in
-      let stdev = sqrt (Moving_variance.get v) in
+      let stdev = Moving_variance.get_stdev v in
       sprintf "%i:(%.2g, %.2g)"
         age
         mean stdev

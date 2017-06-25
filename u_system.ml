@@ -22,7 +22,7 @@ type t = {
   get_action : U_actionid.t -> U_action.t;
   recent_acts : U_recent_acts.t;
 
-  observables : U_obs.t;
+  get_observables : time -> U_obs.t;
 }
 
 let create
@@ -32,6 +32,17 @@ let create
     ~get_control
     ~get_action =
   let recent_acts = U_recent_acts.create window_length in
+  let get_observables =
+    (* probably the wrong place for creating this;
+       whatever handles these values internally should surface this
+       as its API *)
+    U_obs.create
+      ~get_goal
+      ~get_pos_contrib
+      ~get_neg_contrib
+      ~get_pos_contrib_count
+      ~get_neg_contrib_count
+  in
   {
     window_length;
     goal_function;
@@ -39,5 +50,5 @@ let create
     get_control;
     get_action;
     recent_acts;
-    observables;
+    get_observables;
   }
