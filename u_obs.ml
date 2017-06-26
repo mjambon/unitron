@@ -3,39 +3,6 @@
    by as input by an IO module.
 *)
 
-type signal =
-  | Goal
-      (* goal function *)
-  | Pos_contrib
-      (* sum of the positive terms of the prediction of the goal function *)
-  | Neg_contrib
-      (* sum of the negative terms of the prediction of the goal function *)
-  | Pos_contrib_count
-      (* number of positive terms in the prediction of the goal function *)
-  | Neg_contrib_count
-      (* number of negative terms in the prediction of the goal function *)
-
-  | Average of stat
-      (* moving average *)
-
-  | Stdev of stat
-      (* moving standard deviation *)
-
-  | Normalized of stat
-      (* signal translated and scaled such that mean = 0 and stdev = 1,
-         using moving average and moving standard deviation. *)
-
-  | Add of signal * signal
-  | Sub of signal * signal
-  | Mul of signal * signal
-  | Div of signal * signal
-
-and stat =
-  | Short of signal
-      (* moving average and standard deviation over a short window *)
-  | Long of signal
-      (* moving average and standard deviation over a long window *)
-
 (*
    instant = latest value (identity: instant signal = signal)
    recent = moving average over a short window
