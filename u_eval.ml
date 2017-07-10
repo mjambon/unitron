@@ -288,7 +288,7 @@ let test_noisy_contribution () =
   test_system
     ~name:"noisy_contribution"
     ~noise_a:(fun _ ->
-      Random.float 0.2 -. Random.float 0.2
+      U_random.normal ~stdev:0.15 ()
     )
     ()
 
@@ -309,7 +309,7 @@ let test_global_noise () =
   assert (default_contrib_a = 1.);
   assert (default_contrib_b = 0.1);
   let noise t =
-    Random.float 0.2 -. 0.1
+    U_random.normal ~stdev:0.08 ()
   in
   test_system
     ~name:"global_noise"
@@ -320,10 +320,10 @@ let test_noisy_contributions () =
   assert (default_contrib_a = 1.);
   assert (default_contrib_b = 0.1);
   let noise_a t =
-    Random.float 1. -. 0.5
+    U_random.normal ~stdev:0.4 ()
   in
   let noise_b t =
-    Random.float 0.1 -. 0.05
+    U_random.normal ~stdev:0.04 ()
   in
   test_system
     ~name:"noisy_contributions"

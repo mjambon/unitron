@@ -14,6 +14,7 @@ LIBSOURCES = \
   u_perf.ml \
   u_set.mli u_set.ml \
   u_float.ml \
+  u_normal.ml \
   u_stat.ml \
   u_random.ml \
 \
