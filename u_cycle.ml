@@ -50,11 +50,12 @@ let step (x : U_system.t) t =
 let loop
     ?inner_log_mode
     ?max_iter
+    ?stop_condition
     ?(before_step = fun t -> ())
     ?(after_step = fun t -> ())
     system =
   let add_duration, get_mean_duration = U_stat.create_mean_acc () in
-  U_loop.run ?inner_log_mode ?max_iter (fun t ->
+  U_loop.run ?inner_log_mode ?max_iter ?stop_condition (fun t ->
     before_step t;
     let (), step_duration =
       U_perf.time (fun () ->

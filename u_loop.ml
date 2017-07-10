@@ -2,14 +2,19 @@
    Generic main loop.
 *)
 
-let run ?(inner_log_mode = `Skip) ?max_iter f =
+let continue opt_max_iter opt_stop_condition t =
+  (match opt_max_iter with
+   | None -> true
+   | Some n -> t < n)
+  &&
+  (match opt_stop_condition with
+   | None -> true
+   | Some stop_condition -> stop_condition t)
+
+let run ?(inner_log_mode = `Skip) ?max_iter ?stop_condition f =
   let rec loop t =
     U_log.set_time t;
-    let ok =
-      match max_iter with
-      | None -> true
-      | Some n -> t < n
-    in
+    let ok = continue max_iter stop_condition t in
     if ok then (
       f t;
       U_log.flush ();
