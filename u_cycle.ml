@@ -43,8 +43,9 @@ let run_actions x t =
 let step (x : U_system.t) t =
   register_active_controls x t;
   run_actions x t;
-  let feedback = x.goal_function t in
-  U_learn.learn x feedback
+  let goal = x.goal_function t in
+  let info = U_learn.learn x goal in
+  U_obs.update x.observables t info
 
 let loop
     ?inner_log_mode

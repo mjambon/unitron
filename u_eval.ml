@@ -32,7 +32,7 @@ let get_average_contributions window_length acc =
     )
   in
   List.iter (fun control ->
-    U_control.iter_contributions control (fun ~age ~average ~variance ->
+    U_control.iter_contributions control (fun ~age ~average ~stdev ->
       let add, _, _ = stat.(age) in
       add average
     )
@@ -91,6 +91,10 @@ let check_learned_contributions
             ~obtained:contrib_mean
         )
   ) contrib_stat
+
+let print_observables system t =
+  let x = U_obs.get U_system.(system.observables) t in
+  logf "observables: %s" (U_obs.to_string x)
 
 (*
    TODO: change tolerance criteria to allow legitimate outliers.
@@ -179,7 +183,8 @@ let test_system_once
       ~get_action
   in
   let after_step t =
-    print_controls controls
+    print_controls controls;
+    print_observables system t;
   in
   U_cycle.loop
     ?inner_log_mode

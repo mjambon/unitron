@@ -1,21 +1,11 @@
 (*
    Various values, updated at each cycle, meant to be used
    by as input by an IO module.
+   See mli.
 *)
 
-(*
-   instant = latest value (identity: instant signal = signal)
-   recent = moving average over a short window
-   average = moving average over a long window
-   normalized = signal translated and scaled such that mean = 0 and stdev = 1,
-                using moving average and moving variance estimated over
-                a long window.
-   goal = feedback obtained at each cycle, that we try to predict
-   prediction = prediction of the goal function
-   delta = prediction - goal
-   contribution = one term in the prediction produced at a given time
-                  (the number of contributions changes over time)
-*)
+open Printf
+
 type t = {
   normalized_goal : float;
     (* normalized goal *)
@@ -32,6 +22,34 @@ type t = {
     (* recent negative contribution / average negative contribution *)
 }
 
+type time = int
+
+type state = {
+  mutable value : t option;
+  mutable last_updated : time;
+  update_value : time -> U_info.t -> t;
+}
+
+let get state t =
+  if t < 0 then
+    invalid_arg "U_obs.get: negative time";
+  if t <> state.last_updated then
+    invalid_arg "U_obs.get: state is not up to date";
+  match state.value with
+  | None -> assert false
+  | Some x -> x
+
+let update state t info =
+  if t <> state.last_updated + 1 then
+    invalid_arg (
+      sprintf "U_obs.update: last updated at %i, current time is %i"
+        state.last_updated t
+    );
+  assert (U_float.is_finite info.U_info.goal);
+  let new_value = state.update_value t info in
+  state.value <- Some new_value;
+  state.last_updated <- t
+
 (*
    Produce a lazy update function for a given time step.
    It allows calling it multiple times without worrying
@@ -45,37 +63,33 @@ let lazy_update (update : int -> unit) : int -> unit =
       last_updated := t
     )
 
-let create
-    ~get_goal
-    ~get_pos_contrib
-    ~get_neg_contrib
-    ~get_pos_contrib_count
-    ~get_neg_contrib_count =
+let create_stat window get =
+  let r = 1. /. float window in
+  let state = Moving_variance.init ~r_avg:r ~r_var:r () in
+  let force_update t =
+    let x = get t in
+    if U_float.is_finite x then
+      Moving_variance.update state x
+  in
+  let update = lazy_update force_update in
+  let get_average t =
+    update t;
+    Moving_variance.get_average state
+  in
+  let get_stdev t =
+    update t;
+    Moving_variance.get_stdev state
+  in
+  let get_normalized t =
+    update t;
+    Moving_variance.get_normalized state
+  in
+  get_average, get_stdev, get_normalized
 
+let create () =
+  let open U_info in
   let short_window = 20 in
   let long_window = 1000 in
-
-  let create_stat window get =
-    let r = 1. /. float window in
-    let state = Moving_variance.init ~r_avg:r ~r_var:r () in
-    let force_update t =
-      Moving_variance.update state (get t)
-    in
-    let update = lazy_update force_update in
-    let get_average t =
-      update t;
-      Moving_variance.get_average state
-    in
-    let get_stdev t =
-      update t;
-      Moving_variance.get_stdev state
-    in
-    let get_normalized t =
-      update t;
-      Moving_variance.get_normalized state
-    in
-    get_average, get_stdev, get_normalized
-  in
 
   let create_long_stat get =
     create_stat long_window get
@@ -84,6 +98,14 @@ let create
   let create_short_stat get =
     create_stat short_window get
   in
+
+  let input = ref U_info.dummy in
+
+  let get_goal t = !input.goal in
+  let get_pos_contrib t = !input.pos_contrib in
+  let get_neg_contrib t = !input.neg_contrib in
+  let get_pos_contrib_count t = !input.pos_contrib_count in
+  let get_neg_contrib_count t = !input.neg_contrib_count in
 
   let _, _, get_norm_goal = create_long_stat get_goal in
   let get_recent_norm_goal, _, _ = create_short_stat get_norm_goal in
@@ -124,23 +146,15 @@ let create
     get_recent_contrib_count t /. get_avg_contrib_count t
   in
 
-  let latest = ref {
-    normalized_goal = nan;
-    recent_normalized_goal = nan;
-    recent_delta = nan;
-    activity = nan;
-    recent_pos_contrib = nan;
-    recent_neg_contrib = nan;
-  } in
-
-  let force_update t =
+  let update_value t new_input =
+    input := new_input;
     let normalized_goal = get_norm_goal t in
     let recent_normalized_goal = get_recent_norm_goal t in
     let recent_delta = get_delta_ratio t in
     let activity = get_activity t in
     let recent_pos_contrib = get_pos_contrib_ratio t in
     let recent_neg_contrib = get_neg_contrib_ratio t in
-    latest := {
+    {
       normalized_goal;
       recent_normalized_goal;
       recent_delta;
@@ -149,9 +163,22 @@ let create
       recent_neg_contrib;
     }
   in
-  let update = lazy_update force_update in
-  let get t =
-    update t;
-    !latest
-  in
-  update, get
+  {
+    value = None;
+    last_updated = -1;
+    update_value;
+  }
+
+let to_string x =
+  sprintf "normalized_goal=%.3f \
+           recent_normalized_goal=%.3f \
+           recent_delta=%.3f \
+           activity=%.3f \
+           recent_pos_contrib=%.3f \
+           recent_neg_contrib=%.3f"
+    x.normalized_goal
+    x.recent_normalized_goal
+    x.recent_delta
+    x.activity
+    x.recent_pos_contrib
+    x.recent_neg_contrib

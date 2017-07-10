@@ -84,8 +84,11 @@ let update_contrib (x : contribution) v =
 let get_contribution x age =
   x.contributions.(age)
 
+let get_average contrib =
+  Moving_variance.get_average contrib.variance
+
 let get_contribution_average x age =
-  Moving_variance.get_average (get_contribution x age).variance
+  get_average (get_contribution x age)
 
 let iter_contributions x f =
   Array.iteri (fun age x ->

@@ -65,7 +65,33 @@ let adjust_contributions contributions feedback =
   else
     assert false
 
-let learn (x : U_system.t) (feedback : float) =
+let extract_info feedback contributions =
+  let open U_info in
+  let info = {
+    goal = feedback;
+    pos_contrib = 0.;
+    neg_contrib = 0.;
+    pos_contrib_count = 0;
+    neg_contrib_count = 0;
+  } in
+  let info =
+    List.fold_left (fun info contrib ->
+      let x = U_control.get_average contrib in
+      if x > 0. then
+        { info with
+          pos_contrib = info.pos_contrib +. x;
+          pos_contrib_count = info.pos_contrib_count + 1 }
+      else if x < 0. then
+        { info with
+          neg_contrib = info.neg_contrib +. x;
+          neg_contrib_count = info.neg_contrib_count + 1 }
+      else
+        info
+    ) info contributions
+  in
+  info
+
+let learn (x : U_system.t) (feedback : float) : U_info.t =
   let contributions =
     U_recent_acts.fold x.recent_acts [] (fun age controlid acc ->
       let control = x.get_control controlid in
@@ -73,4 +99,5 @@ let learn (x : U_system.t) (feedback : float) =
       contribution :: acc
     )
   in
-  adjust_contributions contributions feedback
+  adjust_contributions contributions feedback;
+  extract_info feedback contributions

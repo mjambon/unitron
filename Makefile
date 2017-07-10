@@ -1,4 +1,4 @@
-.PHONY: default build run utop install uninstall reinstall clean
+.PHONY: default build test utop install uninstall reinstall clean
 
 default: build
 
@@ -13,6 +13,7 @@ LIBSOURCES = \
   u_test.ml \
   u_perf.ml \
   u_set.mli u_set.ml \
+  u_float.ml \
   u_stat.ml \
   u_random.ml \
 \
@@ -24,7 +25,8 @@ LIBSOURCES = \
   u_recent.ml \
   u_recent_acts.ml \
   u_loop.ml \
-  u_obs.ml \
+  u_info.ml \
+  u_obs.mli u_obs.ml \
   u_system.ml \
   u_learn.ml \
   u_cycle.mli u_cycle.ml \
