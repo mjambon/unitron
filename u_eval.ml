@@ -14,8 +14,8 @@ open U_log
 let default_global_iter = 30
 let default_max_iter = 100
 let default_window_length = 10
-let default_contrib_a = 1.
-let default_contrib_b = 0.1
+let default_base_contrib_a0 = 1.
+let default_base_contrib_b0 = 0.1
 let default_tolerance_a = 0.05
 let default_tolerance_b = 0.05
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
@@ -47,70 +47,18 @@ let print_contrib_stats controlid contrib_stat_array =
       mean stdev
   ) contrib_stat_array
 
-let check_expectation
-    ~system_name
-    ~controlid
-    ~age
-    ~expected
-    ~tolerance
-    ~obtained =
-  let ok =
-    obtained >= expected -. tolerance
-    && obtained <= expected +. tolerance
-  in
-  if not ok then
-    logf "ERROR %s %s[%i] expected:%g tolerance:%g obtained:%g"
-      system_name
-      (U_controlid.to_string controlid) age
-      expected tolerance obtained;
-  ok
-
-let check_learned_contributions
-    ~system_name ~controlid
-    ~contrib0 ~tolerance contrib_stat =
-  Array.iteri (fun age (contrib_mean, contrib_stdev) ->
-    match age with
-    | 0 ->
-        assert (
-          check_expectation
-            ~system_name
-            ~controlid
-            ~age
-            ~expected:contrib0
-            ~tolerance
-            ~obtained:contrib_mean
-        )
-    | _ ->
-        assert (
-          check_expectation
-            ~system_name
-            ~controlid
-            ~age
-            ~expected:0.
-            ~tolerance
-            ~obtained:contrib_mean
-        )
-  ) contrib_stat
-
 let print_observables system t =
   let x = U_obs.get U_system.(system.observables) t in
   logf "observables: %s" (U_obs.to_string x)
 
-(*
-   TODO: change tolerance criteria to allow legitimate outliers.
-   Possible solution:
-   Run the same test multiple times and for each contribution
-   in each control, compute mean and standard deviation,
-   and compare to expectations.
-*)
 let test_system_once
   ?inner_log_mode
-  ?(max_iter = default_max_iter)
+  ~create_experiment
   ~window_length
   ~controlid_a
   ~controlid_b
-  ~contrib_a
-  ~contrib_b
+  ~base_contrib_a0
+  ~base_contrib_b0
   ?(noise_a = fun t -> 0.)
   ?(noise_b = fun t -> 0.)
   ?(noise = fun t -> 0.)
@@ -158,10 +106,10 @@ let test_system_once
 
   let goal_function t =
     let contrib =
-      (if !a_was_active then contrib_a +. noise_a t
+      (if !a_was_active then base_contrib_a0 +. noise_a t
        else 0.)
       +.
-      (if !b_was_active then contrib_b +. noise_b t
+      (if !b_was_active then base_contrib_b0 +. noise_b t
        else 0.)
     in
     contrib +. noise t
@@ -174,6 +122,10 @@ let test_system_once
     U_action.get actions id
   in
 
+  let get_controls () =
+    get_control controlid_a, get_control controlid_b
+  in
+
   let system =
     U_system.create
       ~window_length
@@ -182,20 +134,21 @@ let test_system_once
       ~get_control
       ~get_action
   in
+  let experiment = create_experiment get_controls in
   let after_step t =
     print_controls controls;
     print_observables system t;
+    let stop = U_exp.stop_condition experiment system t in
+    not stop
   in
   U_cycle.loop
     ?inner_log_mode
-    ~max_iter
     ~before_step
     ~after_step
     system;
 
-  let control_a = get_control controlid_a in
-  let control_b = get_control controlid_b in
-  (control_a, control_b)
+  let control_a, control_b = get_controls () in
+  (experiment, control_a, control_b)
 
 (*
    We run the system from t=0 several times in order to get a sense
@@ -203,13 +156,11 @@ let test_system_once
 *)
 let test_system
     ~name
+    ~create_experiment
+    ~base_contrib_a0
+    ~base_contrib_b0
     ?(global_iter = default_global_iter)
-    ?max_iter
     ?(window_length = default_window_length)
-    ?(contrib_a = default_contrib_a)
-    ?(contrib_b = default_contrib_b)
-    ?(tolerance_a = default_tolerance_a)
-    ?(tolerance_b = default_tolerance_b)
     ?noise_a
     ?noise_b
     ?noise
@@ -218,6 +169,7 @@ let test_system
 
   let controlid_a = U_controlid.of_string "A" in
   let controlid_b = U_controlid.of_string "B" in
+  let acc_exp = ref [] in
   let acc_a = ref [] in
   let acc_b = ref [] in
   for i = 1 to global_iter do
@@ -226,21 +178,22 @@ let test_system
       else `Off
     in
     logf "--- Run %i/%i ---" i global_iter;
-    let control_a, control_b =
+    let experiment, control_a, control_b =
       test_system_once
         ~inner_log_mode
-        ?max_iter
+        ~create_experiment
         ~window_length
         ~controlid_a
         ~controlid_b
-        ~contrib_a
-        ~contrib_b
+        ~base_contrib_a0
+        ~base_contrib_b0
         ?noise_a
         ?noise_b
         ?noise
         ?determine_actions_ab
         ()
     in
+    acc_exp := experiment :: !acc_exp;
     acc_a := control_a :: !acc_a;
     acc_b := control_b :: !acc_b;
   done;
@@ -248,43 +201,85 @@ let test_system
   let contrib_stat_b = get_average_contributions window_length !acc_b in
   print_contrib_stats controlid_a contrib_stat_a;
   print_contrib_stats controlid_b contrib_stat_b;
-  check_learned_contributions
-    ~system_name:name
-    ~controlid:controlid_a
-    ~contrib0:contrib_a
-    ~tolerance:tolerance_a
-    contrib_stat_a;
-  check_learned_contributions
-    ~system_name:name
-    ~controlid:controlid_b
-    ~contrib0:contrib_b
-    ~tolerance:tolerance_b
-    contrib_stat_b;
+  let exp_report = U_exp.make_report !acc_exp in
+  U_exp.print_report exp_report;
   true
 
-let test_default () =
+let create_default_goals
+    ?(tolerance_a = default_tolerance_a)
+    ?(tolerance_b = default_tolerance_b)
+    ~base_contrib_a0
+    ~base_contrib_b0
+    get_controls =
+  let cond_a0 system t =
+    let control_a, control_b = get_controls () in
+    let contrib_a0 = U_control.get_contribution control_a 0 in
+    let avg = U_control.get_average contrib_a0 in
+    let stdev = U_control.get_stdev contrib_a0 in
+    stdev <= default_tolerance_a
+    && abs_float (avg -. base_contrib_a0) <= tolerance_a
+  in
+  let cond_b0 system t =
+    let control_a, control_b = get_controls () in
+    let contrib_b0 = U_control.get_contribution control_b 0 in
+    let avg = U_control.get_average contrib_b0 in
+    let stdev = U_control.get_stdev contrib_b0 in
+    stdev <= default_tolerance_b
+    && abs_float (avg -. base_contrib_b0) <= tolerance_b
+  in
+  let goal_a = U_exp.create_goal "a0" cond_a0 in
+  let goal_b = U_exp.create_goal "b0" cond_b0 in
+  [goal_a; goal_b]
+
+let make_create_experiment
+    ?(base_contrib_a0 = default_base_contrib_a0)
+    ?(base_contrib_b0 = default_base_contrib_b0)
+    ?(create_extra_goals = fun get_controls -> [])
+    name =
+  fun get_controls ->
+    let base_goals =
+      create_default_goals
+        ~base_contrib_a0
+        ~base_contrib_b0
+        get_controls
+    in
+    let extra_goals = create_extra_goals get_controls in
+    U_exp.create_experiment name (base_goals @ extra_goals)
+
+let test_default
+    ?(base_contrib_a0 = default_base_contrib_a0)
+    ?(base_contrib_b0 = default_base_contrib_b0)
+    () =
+  let name = "default" in
+  let create_experiment =
+    make_create_experiment
+      name
+  in
   test_system
-    ~name:"default"
+    ~name
+    ~base_contrib_a0
+    ~base_contrib_b0
+    ~create_experiment
     ()
 
 let test_negative () =
   test_system
     ~name:"negative"
-    ~contrib_b:(-0.1)
+    ~base_contrib_b0:(-0.1)
     ()
 
 let test_large_difference () =
   test_system
     ~name:"large_difference"
-    ~contrib_a:(10.)
-    ~contrib_b:(0.1)
+    ~base_contrib_a0:(10.)
+    ~base_contrib_b0:(0.1)
     ~tolerance_a:0.5
     ~tolerance_b:0.5
     ~determine_actions_ab: (fun t -> U_random.pick 0.5, U_random.pick 0.5)
     ()
 
 let test_noisy_contribution () =
-  assert (default_contrib_a = 1.);
+  assert (default_base_contrib_a0 = 1.);
   test_system
     ~name:"noisy_contribution"
     ~noise_a:(fun _ ->
@@ -306,8 +301,8 @@ let test_subaction () =
     ()
 
 let test_global_noise () =
-  assert (default_contrib_a = 1.);
-  assert (default_contrib_b = 0.1);
+  assert (default_base_contrib_a0 = 1.);
+  assert (default_base_contrib_b0 = 0.1);
   let noise t =
     U_random.normal ~stdev:0.08 ()
   in
@@ -317,8 +312,8 @@ let test_global_noise () =
     ()
 
 let test_noisy_contributions () =
-  assert (default_contrib_a = 1.);
-  assert (default_contrib_b = 0.1);
+  assert (default_base_contrib_a0 = 1.);
+  assert (default_base_contrib_b0 = 0.1);
   let noise_a t =
     U_random.normal ~stdev:0.4 ()
   in
@@ -338,8 +333,8 @@ let test_noisy_contributions () =
    the predictions.
 *)
 let test_adaptation () =
-  assert (default_contrib_a = 1.);
-  assert (default_contrib_b = 0.1);
+  assert (default_base_contrib_a0 = 1.);
+  assert (default_base_contrib_b0 = 0.1);
   let max_iter = 200 in
   let noise_a t =
     if t < 100 then 1.

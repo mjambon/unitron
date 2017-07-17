@@ -87,6 +87,9 @@ let get_contribution x age =
 let get_average contrib =
   Moving_variance.get_average contrib.variance
 
+let get_stdev contrib =
+  Moving_variance.get_stdev contrib.variance
+
 let get_contribution_average x age =
   get_average (get_contribution x age)
 
