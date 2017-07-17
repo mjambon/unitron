@@ -10,6 +10,8 @@ type goal = {
   goal_name: string;
   goal_condition: U_system.t -> U_system.time -> bool;
   mutable goal_reached_at: U_system.time option;
+    (* Date of the cycle after which the goal was reached.
+       For the number of steps, add 1. *)
 }
 
 type experiment = {
@@ -64,12 +66,13 @@ let make_report l =
     List.iter (fun goal ->
       match goal.goal_reached_at with
       | None -> assert false
-      | Some n ->
+      | Some t ->
           let r =
             try Hashtbl.find tbl goal.goal_name
             with Not_found -> assert false
           in
-          r := n :: !r
+          let number_of_steps = t + 1 in
+          r := number_of_steps :: !r
     ) x.exp_goals
   ) l;
 
@@ -93,13 +96,13 @@ let print_goal_report exp_name (goal_name, int_list) =
     exp_name goal_name;
   logf "  n = %i" (List.length data);
   logf "  mean, stdev = %.2f, %.2f" mean stdev;
-  logf "  min    = %0f" (p 0.);
-  logf "  p10    = %0f" (p 0.1);
-  logf "  p25    = %0f" (p 0.25);
-  logf "  median = %0f" (p 0.5);
-  logf "  p75    = %0f" (p 0.1);
-  logf "  p25    = %0f" (p 0.25);
-  logf "  max    = %0f" (p 1.)
+  logf "  min    = %g" (p 0.);
+  logf "  p10    = %.1f" (p 0.10);
+  logf "  p25    = %.1f" (p 0.25);
+  logf "  median = %.1f" (p 0.50);
+  logf "  p75    = %.1f" (p 0.75);
+  logf "  p90    = %.1f" (p 0.90);
+  logf "  max    = %g" (p 1.)
 
 let print_report (exp_name, goals_reached) =
   List.iter (print_goal_report exp_name) goals_reached

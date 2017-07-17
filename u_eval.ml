@@ -232,8 +232,8 @@ let create_default_goals
   [goal_a; goal_b]
 
 let make_create_experiment
-    ?(base_contrib_a0 = default_base_contrib_a0)
-    ?(base_contrib_b0 = default_base_contrib_b0)
+    ~base_contrib_a0
+    ~base_contrib_b0
     ?(create_extra_goals = fun get_controls -> [])
     name =
   fun get_controls ->
@@ -246,13 +246,14 @@ let make_create_experiment
     let extra_goals = create_extra_goals get_controls in
     U_exp.create_experiment name (base_goals @ extra_goals)
 
-let test_default
+let make_test
     ?(base_contrib_a0 = default_base_contrib_a0)
     ?(base_contrib_b0 = default_base_contrib_b0)
-    () =
-  let name = "default" in
+    name =
   let create_experiment =
     make_create_experiment
+      ~base_contrib_a0
+      ~base_contrib_b0
       name
   in
   test_system
@@ -262,22 +263,21 @@ let test_default
     ~create_experiment
     ()
 
+let test_default () =
+  make_test "default"
+
 let test_negative () =
-  test_system
-    ~name:"negative"
+  make_test
     ~base_contrib_b0:(-0.1)
-    ()
+    "negative"
 
 let test_large_difference () =
-  test_system
-    ~name:"large_difference"
+  make_test
     ~base_contrib_a0:(10.)
     ~base_contrib_b0:(0.1)
-    ~tolerance_a:0.5
-    ~tolerance_b:0.5
-    ~determine_actions_ab: (fun t -> U_random.pick 0.5, U_random.pick 0.5)
-    ()
+    "large_difference"
 
+(*
 let test_noisy_contribution () =
   assert (default_base_contrib_a0 = 1.);
   test_system
@@ -351,14 +351,17 @@ let test_adaptation () =
     ~noise_b
     ~determine_actions_ab: (fun t -> U_random.pick 0.5, U_random.pick 0.5)
     ()
+*)
 
 let tests = [
   "default", test_default;
   "negative", test_negative;
   "large difference", test_large_difference;
+(*
   "noisy contribution", test_noisy_contribution;
   "subaction", test_subaction;
   "global noise", test_global_noise;
   "noisy contributions", test_noisy_contributions;
   "adaptation", test_adaptation;
+*)
 ]

@@ -89,21 +89,23 @@ let get_percentile l =
     low_weight *. a.(low_index) +. high_weight *. a.(high_index)
 
 let test_percentiles () =
-  assert (get_percentile [0.] 0. = 0.);
-  assert (get_percentile [1.23] 0. = 1.23);
-  assert (get_percentile [1.23] 0.5 = 1.23);
-  assert (get_percentile [1.23] 1. = 1.23);
+  let ( =~ ) a b = abs_float (a -. b) < 1e-6 in
 
-  assert (get_percentile [0.; 1.] 0.6 = 0.6);
-  assert (get_percentile [0.; 1.] 0. = 0.);
-  assert (get_percentile [0.; 1.] 1. = 1.);
+  assert (get_percentile [0.] 0. =~ 0.);
+  assert (get_percentile [1.23] 0. =~ 1.23);
+  assert (get_percentile [1.23] 0.5 =~ 1.23);
+  assert (get_percentile [1.23] 1. =~ 1.23);
 
-  assert (get_percentile [0.; 1.; 10.] 0.5 = 1.);
-  assert (get_percentile [0.; 1.; 10.] 0.25 = 0.25);
-  assert (get_percentile [0.; 1.; 10.] 0.75 = 5.5);
+  assert (get_percentile [0.; 1.] 0.6 =~ 0.6);
+  assert (get_percentile [0.; 1.] 0. =~ 0.);
+  assert (get_percentile [0.; 1.] 1. =~ 1.);
 
-  assert (get_percentile [-1.; -0.5; 0.; 10.] 0. = -1.);
-  assert (get_percentile [-1.; -0.5; 0.; 10.] 0.5 = -0.25);
+  assert (get_percentile [0.; 1.; 10.] 0.5 =~ 1.);
+  assert (get_percentile [0.; 1.; 10.] 0.25 =~ 0.5);
+  assert (get_percentile [0.; 1.; 10.] 0.75 =~ 5.5);
+
+  assert (get_percentile [-1.; -0.5; 0.; 10.] 0. =~ -1.);
+  assert (get_percentile [-1.; -0.5; 0.; 10.] 0.5 =~ -0.25);
 
   true
 

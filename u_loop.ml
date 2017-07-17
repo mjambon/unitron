@@ -8,19 +8,16 @@ let should_start opt_max_iter t =
   | Some n -> t < n
 
 let run ?(inner_log_mode = `Skip) ?max_iter f =
+  let iter_count = ref 0 in
   let rec loop continue t =
     U_log.set_time t;
     let ok = continue && should_start max_iter t in
     if ok then (
       let continue = f t in
       U_log.flush ();
+      incr iter_count;
       loop continue (t + 1)
     )
-  in
-  let iter_count =
-    match max_iter with
-    | None -> assert false
-    | Some x -> x
   in
   let (), dt =
     U_perf.time (fun () ->
@@ -30,7 +27,7 @@ let run ?(inner_log_mode = `Skip) ?max_iter f =
       U_log.set_mode `Full
     )
   in
-  let step_duration = dt /. float iter_count in
+  let step_duration = dt /. float !iter_count in
   U_log.logf "total time: %.6f s" dt;
   U_log.logf "step duration: %.2g ms, %.2g KHz"
     (1e3 *. step_duration) (1. /. (1e3 *. step_duration));
