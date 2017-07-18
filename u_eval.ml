@@ -30,23 +30,26 @@ let print_controls controls =
 let get_average_contributions window_length acc =
   let stat =
     Array.init window_length (fun age ->
-      U_stat.create_stdev_acc ()
+      U_stat.create_stdev_acc (), U_stat.create_stdev_acc ()
     )
   in
   List.iter (fun control ->
     U_control.iter_contributions control (fun ~age ~average ~stdev ->
-      let add, _, _ = stat.(age) in
-      add average
+      let (add1, _, _), (add2, _, _) = stat.(age) in
+      add1 average;
+      add2 stdev
     )
   ) acc;
 
-  Array.map (fun (_, _, get_mean_and_stdev) -> get_mean_and_stdev ()) stat
+  Array.map (fun ((_, _, get_avg_stat), (_, _, get_stdev_stat)) ->
+    get_avg_stat (), get_stdev_stat ()
+  ) stat
 
 let print_contrib_stats controlid contrib_stat_array =
-  Array.iteri (fun age (mean, stdev) ->
-    logf "contribution %s[%i]: mean %.2g, stdev %.2g"
+  Array.iteri (fun age ((avg_mean, avg_stdev), (stdev_mean, stdev_stdev)) ->
+    logf "contribution %s[%i]: avg:(%.2g, %.2g) stdev:(%.2g, %.2g)"
       (U_controlid.to_string controlid) age
-      mean stdev
+      avg_mean avg_stdev stdev_mean stdev_stdev
   ) contrib_stat_array
 
 let print_observables system t =
