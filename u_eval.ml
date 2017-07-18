@@ -11,7 +11,7 @@
 open Printf
 open U_log
 
-let default_global_iter = 30
+let default_global_iter = 100
 let default_max_iter = 100
 let default_window_length = 10
 let default_base_contrib_a0 = 1.
