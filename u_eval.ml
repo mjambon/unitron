@@ -323,8 +323,6 @@ let test_noisy_contribution () =
     ~max_stdev_b: 0.05
     ()
 
-(*
-
 (* B active => A active *)
 let test_subaction () =
   let determine_actions_ab t =
@@ -332,9 +330,8 @@ let test_subaction () =
     let b = a && U_random.pick 0.5 in
     a, b
   in
-  test_system
-    ~name:"subaction"
-    ~max_iter:200
+  make_test
+    ~name: "subaction"
     ~determine_actions_ab
     ()
 
@@ -344,8 +341,8 @@ let test_global_noise () =
   let noise t =
     U_random.normal ~stdev:0.08 ()
   in
-  test_system
-    ~name:"global_noise"
+  make_test
+    ~name: "global_noise"
     ~noise
     ()
 
@@ -358,8 +355,8 @@ let test_noisy_contributions () =
   let noise_b t =
     U_random.normal ~stdev:0.04 ()
   in
-  test_system
-    ~name:"noisy_contributions"
+  make_test
+    ~name: "noisy_contributions"
     ~tolerance_a: 0.1
     ~tolerance_b: 0.08
     ~noise_a
@@ -373,7 +370,6 @@ let test_noisy_contributions () =
 let test_adaptation () =
   assert (default_base_contrib_a0 = 1.);
   assert (default_base_contrib_b0 = 0.1);
-  let max_iter = 200 in
   let noise_a t =
     if t < 100 then 1.
     else 0.
@@ -382,24 +378,20 @@ let test_adaptation () =
     if t < 50 then (-0.1)
     else 0.
   in
-  test_system
-    ~name:"adaptation"
-    ~max_iter
+  make_test
+    ~name: "adaptation"
     ~noise_a
     ~noise_b
     ~determine_actions_ab: (fun t -> U_random.pick 0.5, U_random.pick 0.5)
     ()
-*)
 
 let tests = [
   "default", test_default;
   "negative", test_negative;
   "large difference", test_large_difference;
   "noisy contribution", test_noisy_contribution;
-(*
   "subaction", test_subaction;
   "global noise", test_global_noise;
   "noisy contributions", test_noisy_contributions;
   "adaptation", test_adaptation;
-*)
 ]
