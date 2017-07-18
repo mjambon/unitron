@@ -18,6 +18,8 @@ let default_base_contrib_a0 = 1.
 let default_base_contrib_b0 = 0.1
 let default_tolerance_a = 0.05
 let default_tolerance_b = 0.05
+let default_max_stdev_a = 0.05
+let default_max_stdev_b = 0.05
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
 
 let print_controls controls =
@@ -208,6 +210,8 @@ let test_system
 let create_default_goals
     ?(tolerance_a = default_tolerance_a)
     ?(tolerance_b = default_tolerance_b)
+    ?(max_stdev_a = default_max_stdev_a)
+    ?(max_stdev_b = default_max_stdev_b)
     ~base_contrib_a0
     ~base_contrib_b0
     get_controls =
@@ -216,7 +220,7 @@ let create_default_goals
     let contrib_a0 = U_control.get_contribution control_a 0 in
     let avg = U_control.get_average contrib_a0 in
     let stdev = U_control.get_stdev contrib_a0 in
-    stdev <= default_tolerance_a
+    stdev <= max_stdev_a
     && abs_float (avg -. base_contrib_a0) <= tolerance_a
   in
   let cond_b0 system t =
@@ -224,7 +228,7 @@ let create_default_goals
     let contrib_b0 = U_control.get_contribution control_b 0 in
     let avg = U_control.get_average contrib_b0 in
     let stdev = U_control.get_stdev contrib_b0 in
-    stdev <= default_tolerance_b
+    stdev <= max_stdev_b
     && abs_float (avg -. base_contrib_b0) <= tolerance_b
   in
   let goal_a = U_exp.create_goal "a0" cond_a0 in
@@ -234,6 +238,10 @@ let create_default_goals
 let make_create_experiment
     ~base_contrib_a0
     ~base_contrib_b0
+    ?tolerance_a
+    ?tolerance_b
+    ?max_stdev_a
+    ?max_stdev_b
     ?(create_extra_goals = fun get_controls -> [])
     name =
   fun get_controls ->
@@ -241,6 +249,8 @@ let make_create_experiment
       create_default_goals
         ~base_contrib_a0
         ~base_contrib_b0
+        ?max_stdev_a
+        ?max_stdev_b
         get_controls
     in
     let extra_goals = create_extra_goals get_controls in
@@ -249,43 +259,71 @@ let make_create_experiment
 let make_test
     ?(base_contrib_a0 = default_base_contrib_a0)
     ?(base_contrib_b0 = default_base_contrib_b0)
-    name =
+    ?tolerance_a
+    ?tolerance_b
+    ?max_stdev_a
+    ?max_stdev_b
+    ?noise_a
+    ?noise_b
+    ?noise
+    ?determine_actions_ab
+    ~name
+    () =
   let create_experiment =
     make_create_experiment
       ~base_contrib_a0
       ~base_contrib_b0
+      ?tolerance_a
+      ?tolerance_b
+      ?max_stdev_a
+      ?max_stdev_b
       name
   in
   test_system
     ~name
+    ~create_experiment
     ~base_contrib_a0
     ~base_contrib_b0
-    ~create_experiment
+    ?noise_a
+    ?noise_b
+    ?noise
+    ?determine_actions_ab
     ()
 
 let test_default () =
-  make_test "default"
+  make_test
+    ~name: "default"
+    ()
 
 let test_negative () =
   make_test
-    ~base_contrib_b0:(-0.1)
-    "negative"
+    ~base_contrib_b0: (-0.1)
+    ~name: "negative"
+    ()
 
 let test_large_difference () =
   make_test
-    ~base_contrib_a0:(10.)
-    ~base_contrib_b0:(0.1)
-    "large_difference"
+    ~name: "large_difference"
+    ~base_contrib_a0: 10.
+    ~base_contrib_b0: 0.1
+    ()
 
-(*
 let test_noisy_contribution () =
   assert (default_base_contrib_a0 = 1.);
-  test_system
-    ~name:"noisy_contribution"
+  make_test
+    ~name: "noisy_contribution"
     ~noise_a:(fun _ ->
-      U_random.normal ~stdev:0.15 ()
+      U_random.normal ~stdev: 0.5 ()
     )
+    ~max_stdev_a: 0.5
+
+    ~noise_b:(fun _ ->
+      U_random.normal ~stdev: 0.05 ()
+    )
+    ~max_stdev_b: 0.05
     ()
+
+(*
 
 (* B active => A active *)
 let test_subaction () =
@@ -357,8 +395,8 @@ let tests = [
   "default", test_default;
   "negative", test_negative;
   "large difference", test_large_difference;
-(*
   "noisy contribution", test_noisy_contribution;
+(*
   "subaction", test_subaction;
   "global noise", test_global_noise;
   "noisy contributions", test_noisy_contributions;
