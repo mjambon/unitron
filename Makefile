@@ -9,6 +9,7 @@ utop:
 PACKAGES = unix moving-percentile
 
 LIBSOURCES = \
+  u_time.ml \
   u_log.mli u_log.ml \
   u_test.ml \
   u_perf.ml \
@@ -17,6 +18,7 @@ LIBSOURCES = \
   u_normal.ml \
   u_stat.ml \
   u_random.ml \
+  u_lazy.ml \
 \
   u_permanent_id.ml \
   u_controlid.ml \

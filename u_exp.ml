@@ -8,8 +8,8 @@ open U_log
 
 type goal = {
   goal_name: string;
-  goal_condition: U_system.t -> U_system.time -> bool;
-  mutable goal_reached_at: U_system.time option;
+  goal_condition: U_system.t -> U_time.t -> bool;
+  mutable goal_reached_at: U_time.t option;
     (* Date of the cycle after which the goal was reached.
        For the number of steps, add 1. *)
 }

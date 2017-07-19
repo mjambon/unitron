@@ -50,19 +50,6 @@ let update state t info =
   state.value <- Some new_value;
   state.last_updated <- t
 
-(*
-   Produce a lazy update function for a given time step.
-   It allows calling it multiple times without worrying
-   about unnecessary recomputations.
-*)
-let lazy_update (update : int -> unit) : int -> unit =
-  let last_updated = ref max_int in
-  fun t ->
-    if t <> !last_updated then (
-      update t;
-      last_updated := t
-    )
-
 let create_stat window get =
   let r = 1. /. float window in
   let state = Moving_variance.init ~r_avg:r ~r_var:r () in
@@ -71,7 +58,7 @@ let create_stat window get =
     if U_float.is_finite x then
       Moving_variance.update state x
   in
-  let update = lazy_update force_update in
+  let update = U_lazy.update force_update in
   let get_average t =
     update t;
     Moving_variance.get_average state

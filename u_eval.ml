@@ -56,6 +56,29 @@ let print_observables system t =
   let x = U_obs.get U_system.(system.observables) t in
   logf "observables: %s" (U_obs.to_string x)
 
+let create_delayed_effect_manager () =
+  let scheduled_contributions = ref [] in
+  let add_action future_contributions =
+    scheduled_contributions :=
+      future_contributions :: !scheduled_contributions
+  in
+  let pop_effects t =
+    let current =
+      List.fold_left (fun acc l ->
+        match l with
+        | current :: _ -> acc +. current
+        | [] -> acc
+      ) 0. !scheduled_contributions
+    in
+    let future =
+      List.filter ((<>) [])
+        (List.map (function [] -> [] | _ :: l -> l) !scheduled_contributions)
+    in
+    scheduled_contributions := future;
+    current
+  in
+  add_action, U_lazy.update pop_effects
+
 let test_system_once
   ?inner_log_mode
   ~create_experiment
@@ -108,6 +131,8 @@ let test_system_once
       add controlid_b
     )
   in
+
+  let add_action, pop_effects = create_delayed_effect_manager () in
 
   let goal_function t =
     let contrib =

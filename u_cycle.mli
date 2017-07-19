@@ -10,7 +10,7 @@
 *)
 val loop :
   ?inner_log_mode: U_log.mode ->
-  ?max_iter: U_system.time ->
-  ?before_step: (U_system.time -> unit) ->
-  ?after_step: (U_system.time -> bool) ->
+  ?max_iter: U_time.t ->
+  ?before_step: (U_time.t -> unit) ->
+  ?after_step: (U_time.t -> bool) ->
   U_system.t -> unit
