@@ -413,6 +413,8 @@ let test_noisy_contributions () =
     ~name: "noisy_contributions"
     ~tolerance_a: 0.1
     ~tolerance_b: 0.08
+    ~max_stdev_a: 0.5
+    ~max_stdev_b: 0.05
     ~noise_a
     ~noise_b
     ()
