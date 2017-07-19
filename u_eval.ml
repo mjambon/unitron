@@ -14,8 +14,15 @@ open U_log
 let default_global_iter = 100
 let default_max_iter = 100
 let default_window_length = 10
+
 let default_base_contrib_a0 = 1.
+let default_base_contrib_a1 = -0.5
+let default_base_contrib_a2 = 0.25
+
 let default_base_contrib_b0 = 0.1
+let default_base_contrib_b1 = 0.2
+let default_base_contrib_b2 = 0.05
+
 let default_tolerance_a = 0.05
 let default_tolerance_b = 0.05
 let default_max_stdev_a = 0.05
@@ -77,7 +84,7 @@ let create_delayed_effect_manager () =
     scheduled_contributions := future;
     current
   in
-  add_action, U_lazy.update pop_effects
+  add_action, U_lazy.get pop_effects
 
 let test_system_once
   ?inner_log_mode
@@ -86,7 +93,11 @@ let test_system_once
   ~controlid_a
   ~controlid_b
   ~base_contrib_a0
+  ~base_contrib_a1
+  ~base_contrib_a2
   ~base_contrib_b0
+  ~base_contrib_b1
+  ~base_contrib_b2
   ?(noise_a = fun t -> 0.)
   ?(noise_b = fun t -> 0.)
   ?(noise = fun t -> 0.)
@@ -120,29 +131,28 @@ let test_system_once
     b_was_active := false
   in
 
+  let add_action, pop_effects = create_delayed_effect_manager () in
+
   let read_active_controls t add =
     let a, b = determine_actions_ab t in
     if a then (
       logf "A*";
-      add controlid_a
+      add controlid_a;
+      add_action [base_contrib_a0 +. noise_a t;
+                  base_contrib_a1 +. noise_a t;
+                  base_contrib_a2 +. noise_a t];
     );
     if b then (
       logf "B*";
-      add controlid_b
+      add controlid_b;
+      add_action [base_contrib_b0 +. noise_b t;
+                  base_contrib_b1 +. noise_b t;
+                  base_contrib_b2 +. noise_b t];
     )
   in
 
-  let add_action, pop_effects = create_delayed_effect_manager () in
-
   let goal_function t =
-    let contrib =
-      (if !a_was_active then base_contrib_a0 +. noise_a t
-       else 0.)
-      +.
-      (if !b_was_active then base_contrib_b0 +. noise_b t
-       else 0.)
-    in
-    contrib +. noise t
+    pop_effects t +. noise t
   in
 
   let get_control id =
@@ -188,7 +198,11 @@ let test_system
     ~name
     ~create_experiment
     ~base_contrib_a0
+    ~base_contrib_a1
+    ~base_contrib_a2
     ~base_contrib_b0
+    ~base_contrib_b1
+    ~base_contrib_b2
     ?(global_iter = default_global_iter)
     ?(window_length = default_window_length)
     ?noise_a
@@ -216,7 +230,11 @@ let test_system
         ~controlid_a
         ~controlid_b
         ~base_contrib_a0
+        ~base_contrib_a1
+        ~base_contrib_a2
         ~base_contrib_b0
+        ~base_contrib_b1
+        ~base_contrib_b2
         ?noise_a
         ?noise_b
         ?noise
@@ -286,7 +304,11 @@ let make_create_experiment
 
 let make_test
     ?(base_contrib_a0 = default_base_contrib_a0)
+    ?(base_contrib_a1 = default_base_contrib_a1)
+    ?(base_contrib_a2 = default_base_contrib_a2)
     ?(base_contrib_b0 = default_base_contrib_b0)
+    ?(base_contrib_b1 = default_base_contrib_b1)
+    ?(base_contrib_b2 = default_base_contrib_b2)
     ?tolerance_a
     ?tolerance_b
     ?max_stdev_a
@@ -311,7 +333,11 @@ let make_test
     ~name
     ~create_experiment
     ~base_contrib_a0
+    ~base_contrib_a1
+    ~base_contrib_a2
     ~base_contrib_b0
+    ~base_contrib_b1
+    ~base_contrib_b2
     ?noise_a
     ?noise_b
     ?noise

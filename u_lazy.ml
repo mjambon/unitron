@@ -3,12 +3,12 @@
    It allows calling it multiple times without worrying
    about unnecessary recomputations.
 *)
-let update (force_update : U_time.t -> 'a) : U_time.t -> 'a =
+let get (refresh : U_time.t -> 'a) : U_time.t -> 'a =
   let last_updated = ref max_int in
   let cached_result = ref None in
   fun t ->
     if t <> !last_updated then (
-      let result = force_update t in
+      let result = refresh t in
       cached_result := Some result;
       last_updated := t;
       result

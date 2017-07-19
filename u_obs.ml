@@ -58,7 +58,7 @@ let create_stat window get =
     if U_float.is_finite x then
       Moving_variance.update state x
   in
-  let update = U_lazy.update force_update in
+  let update = U_lazy.get force_update in
   let get_average t =
     update t;
     Moving_variance.get_average state
