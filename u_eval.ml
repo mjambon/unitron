@@ -362,21 +362,6 @@ let test_large_difference () =
     ~base_contrib_b0: 0.1
     ()
 
-let test_noisy_contribution () =
-  assert (default_base_contrib_a0 = 1.);
-  make_test
-    ~name: "noisy_contribution"
-    ~noise_a:(fun _ ->
-      U_random.normal ~stdev: 0.5 ()
-    )
-    ~max_stdev_a: 0.5
-
-    ~noise_b:(fun _ ->
-      U_random.normal ~stdev: 0.05 ()
-    )
-    ~max_stdev_b: 0.05
-    ()
-
 (* B active => A active *)
 let test_subaction () =
   let determine_actions_ab t =
@@ -398,6 +383,21 @@ let test_global_noise () =
   make_test
     ~name: "global_noise"
     ~noise
+    ()
+
+let test_noisy_contribution () =
+  assert (default_base_contrib_a0 = 1.);
+  make_test
+    ~name: "noisy_contribution"
+    ~noise_a:(fun _ ->
+      U_random.normal ~stdev: 0.5 ()
+    )
+    ~max_stdev_a: 0.5
+
+    ~noise_b:(fun _ ->
+      U_random.normal ~stdev: 0.05 ()
+    )
+    ~max_stdev_b: 0.05
     ()
 
 let test_noisy_contributions () =
@@ -445,9 +445,9 @@ let tests = [
   "default", test_default;
   "negative", test_negative;
   "large difference", test_large_difference;
-  "noisy contribution", test_noisy_contribution;
   "subaction", test_subaction;
   "global noise", test_global_noise;
+  "noisy contribution", test_noisy_contribution;
   "noisy contributions", test_noisy_contributions;
   "adaptation", test_adaptation;
 ]
