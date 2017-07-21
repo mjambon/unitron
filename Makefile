@@ -48,7 +48,7 @@ build: META
 		unitron.cmxa u_test_main.ml
 
 test: build
-	./u_test > test.log 2>&1
+	time -p ./u_test > test.log 2>&1
 
 META: META.in
 	echo 'requires = "$(PACKAGES)"' > META
