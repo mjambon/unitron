@@ -104,7 +104,7 @@ let test_system_once
   ?(determine_actions_ab = default_determine_actions_ab)
   () =
 
-  let moving_avg_cst = 0.1 in
+  let moving_avg_cst = 0.5 (* seems high but works well *) in
 
   let controls = U_control.create_set () in
   let actions = U_action.create_set () in
