@@ -49,6 +49,7 @@ build: META
 
 test: build
 	time -p ./u_test > test.log 2>&1
+	grep '^>' test.log | tee summary.log
 
 META: META.in
 	echo 'requires = "$(PACKAGES)"' > META

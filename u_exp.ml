@@ -94,15 +94,19 @@ let print_goal_report exp_name (goal_name, int_list) =
   let p = U_stat.get_percentile data in
   logf "experiment %s, number of steps used to reach goal %s:"
     exp_name goal_name;
+  let median = p 0.5 in
   logf "  n = %i" (List.length data);
-  logf "  mean, stdev = %.2f, %.2f" mean stdev;
-  logf "  min    = %g" (p 0.);
-  logf "  p10    = %.1f" (p 0.10);
-  logf "  p25    = %.1f" (p 0.25);
-  logf "  median = %.1f" (p 0.50);
-  logf "  p75    = %.1f" (p 0.75);
-  logf "  p90    = %.1f" (p 0.90);
-  logf "  max    = %g" (p 1.)
+  logf "  mean, stdev  = %.2f, %.2f" mean stdev;
+  logf "  p0 (min)     = %g" (p 0.);
+  logf "  p10          = %.1f" (p 0.10);
+  logf "  p25          = %.1f" (p 0.25);
+  logf "  p50 (median) = %.1f" median;
+  logf "  p75          = %.1f" (p 0.75);
+  logf "  p90          = %.1f" (p 0.90);
+  logf "  p100 (max)   = %g" (p 1.);
+  (* This line is meant to produce a summary with `grep '^>'` *)
+  Printf.printf "> %-30s %.1f\n"
+    (exp_name ^ "." ^ goal_name) median
 
 let print_report (exp_name, goals_reached) =
   List.iter (print_goal_report exp_name) goals_reached

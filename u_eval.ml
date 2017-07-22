@@ -103,6 +103,7 @@ let test_system_once
   ?(noise = fun t -> 0.)
   ?(determine_actions_ab = default_determine_actions_ab)
   () =
+
   let moving_avg_cst = 0.1 in
 
   let controls = U_control.create_set () in
@@ -303,6 +304,7 @@ let make_create_experiment
     U_exp.create_experiment name (base_goals @ extra_goals)
 
 let make_test
+    ?window_length
     ?(base_contrib_a0 = default_base_contrib_a0)
     ?(base_contrib_a1 = default_base_contrib_a1)
     ?(base_contrib_a2 = default_base_contrib_a2)
@@ -338,6 +340,7 @@ let make_test
     ~base_contrib_b0
     ~base_contrib_b1
     ~base_contrib_b2
+    ?window_length
     ?noise_a
     ?noise_b
     ?noise
@@ -347,6 +350,16 @@ let make_test
 let test_default () =
   make_test
     ~name: "default"
+    ()
+
+let test_shortest_window () =
+  make_test
+    ~name: "shortest_window"
+    ~window_length: 1
+    ~base_contrib_a1: 0.
+    ~base_contrib_a2: 0.
+    ~base_contrib_b1: 0.
+    ~base_contrib_b2: 0.
     ()
 
 let test_negative () =
@@ -385,6 +398,14 @@ let test_global_noise () =
     ~noise
     ()
 
+(* same parameters as noisy_contribution below, without the noise. *)
+let test_nonnoisy_contribution () =
+  assert (default_base_contrib_a0 = 1.);
+  make_test
+    ~name: "nonnoisy_contribution"
+    ~max_stdev_a: 0.5
+    ()
+
 let test_noisy_contribution () =
   assert (default_base_contrib_a0 = 1.);
   make_test
@@ -393,11 +414,6 @@ let test_noisy_contribution () =
       U_random.normal ~stdev: 0.5 ()
     )
     ~max_stdev_a: 0.5
-
-    ~noise_b:(fun _ ->
-      U_random.normal ~stdev: 0.05 ()
-    )
-    ~max_stdev_b: 0.05
     ()
 
 let test_noisy_contributions () =
@@ -443,10 +459,12 @@ let test_adaptation () =
 
 let tests = [
   "default", test_default;
+  "shortest_window", test_shortest_window;
   "negative", test_negative;
   "large difference", test_large_difference;
   "subaction", test_subaction;
   "global noise", test_global_noise;
+  "non-noisy contribution", test_nonnoisy_contribution;
   "noisy contribution", test_noisy_contribution;
   "noisy contributions", test_noisy_contributions;
   "adaptation", test_adaptation;
