@@ -66,5 +66,5 @@ reinstall:
 	$(MAKE) uninstall; $(MAKE) install
 
 clean:
-	rm -f *~ *.cm[ioxat] *.cmti *.cmx[as] *.o *.a *.annot demo META \
-    u_test test.log
+	rm -f *~ *.cm[ioxat] *.cmti *.cmx[as] *.o *.a *.annot META \
+    u_test test.log summary.log
