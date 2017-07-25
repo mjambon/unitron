@@ -371,8 +371,7 @@ let test_negative () =
 let test_large_difference () =
   make_test
     ~name: "large_difference"
-    ~base_contrib_a0: 10.
-    ~base_contrib_b0: 0.1
+    ~base_contrib_a0: 100.
     ()
 
 (* B active => A active *)
