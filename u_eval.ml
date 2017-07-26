@@ -139,16 +139,18 @@ let test_system_once
     if a then (
       logf "A*";
       add controlid_a;
-      add_action [base_contrib_a0 +. noise_a t;
-                  base_contrib_a1 +. noise_a t;
-                  base_contrib_a2 +. noise_a t];
+      let extra = noise_a t in
+      add_action [base_contrib_a0 +. extra;
+                  base_contrib_a1 +. extra;
+                  base_contrib_a2 +. extra];
     );
     if b then (
       logf "B*";
       add controlid_b;
-      add_action [base_contrib_b0 +. noise_b t;
-                  base_contrib_b1 +. noise_b t;
-                  base_contrib_b2 +. noise_b t];
+      let extra = noise_b t in
+      add_action [base_contrib_b0 +. extra;
+                  base_contrib_b1 +. extra;
+                  base_contrib_b2 +. extra];
     )
   in
 
