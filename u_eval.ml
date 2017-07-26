@@ -374,6 +374,23 @@ let test_large_difference () =
     ~base_contrib_a0: 100.
     ()
 
+let test_large_difference_corrected () =
+  (* hardcoded ratio of max gap between expected contributions,
+     from default setup to this setup *)
+  let r = (100. -. (-0.5)) /. (1. -. (-0.5)) in
+  let tolerance_a = r *. default_tolerance_a in
+  let tolerance_b = r *. default_tolerance_b in
+  let max_stdev_a = r *. default_max_stdev_a in
+  let max_stdev_b = r *. default_max_stdev_b in
+  make_test
+    ~name: "large_difference_corrected"
+    ~base_contrib_a0: 100.
+    ~tolerance_a
+    ~tolerance_b
+    ~max_stdev_a
+    ~max_stdev_b
+    ()
+
 (* B active => A active *)
 let test_subaction () =
   let determine_actions_ab t =
@@ -461,6 +478,7 @@ let tests = [
   "shortest_window", test_shortest_window;
   "negative", test_negative;
   "large difference", test_large_difference;
+  "large difference_corrected", test_large_difference_corrected;
   "subaction", test_subaction;
   "global noise", test_global_noise;
   "non-noisy contribution", test_nonnoisy_contribution;
