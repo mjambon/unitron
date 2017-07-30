@@ -405,16 +405,20 @@ let test_subaction () =
     ~determine_actions_ab
     ()
 
-let test_global_noise () =
+let test_global_noise suffix noise_stdev =
   assert (default_base_contrib_a0 = 1.);
   assert (default_base_contrib_b0 = 0.1);
   let noise t =
-    U_random.normal ~stdev:0.08 ()
+    U_random.normal ~stdev:noise_stdev ()
   in
   make_test
-    ~name: "global_noise"
+    ~name: ("global_noise" ^ suffix)
     ~noise
     ()
+
+let test_global_noise1 () = test_global_noise "1" 0.1
+let test_global_noise2 () = test_global_noise "2" 0.5
+let test_global_noise3 () = test_global_noise "3" 1.
 
 (* same parameters as noisy_contribution below, without the noise. *)
 let test_nonnoisy_contribution () =
@@ -482,7 +486,9 @@ let tests = [
   "large difference", test_large_difference;
   "large difference_corrected", test_large_difference_corrected;
   "subaction", test_subaction;
-  "global noise", test_global_noise;
+  "global noise1", test_global_noise1;
+  "global noise2", test_global_noise2;
+  "global noise3", test_global_noise3;
   "non-noisy contribution", test_nonnoisy_contribution;
   "noisy contribution", test_noisy_contribution;
   "noisy contributions", test_noisy_contributions;
