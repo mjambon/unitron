@@ -11,8 +11,7 @@
 open Printf
 open U_log
 
-let default_global_iter = 100
-let default_max_iter = 100
+let default_global_iter = 10 (* 100 *)
 let default_window_length = 10
 
 let default_base_contrib_a0 = 1.
@@ -25,6 +24,7 @@ let default_base_contrib_b2 = 0.05
 
 let default_epsilon_a = 0.05
 let default_epsilon_b = 0.005
+
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
 
 let print_controls controls =
@@ -260,6 +260,8 @@ let create_default_goals
     ~base_contrib_a0
     ~base_contrib_b0
     get_controls =
+  assert (epsilon_a > 0.);
+  assert (epsilon_b > 0.);
   let cond_a0 system t =
     let control_a, control_b = get_controls () in
     let contrib_a0 = U_control.get_contribution control_a 0 in
@@ -348,10 +350,19 @@ let test_shortest_window () =
     ~base_contrib_b2: 0.
     ()
 
-let test_negative () =
+let test_scaled_contributions () =
+  let scale x = 1000. *. x in
+  let abs_scale x = abs_float (scale x) in
   make_test
-    ~base_contrib_b0: (-0.1)
-    ~name: "negative"
+    ~base_contrib_a0: (scale default_base_contrib_a0)
+    ~base_contrib_a1: (scale default_base_contrib_a1)
+    ~base_contrib_a2: (scale default_base_contrib_a2)
+    ~base_contrib_b0: (scale default_base_contrib_b0)
+    ~base_contrib_b1: (scale default_base_contrib_b1)
+    ~base_contrib_b2: (scale default_base_contrib_b2)
+    ~epsilon_a: (abs_scale default_epsilon_a)
+    ~epsilon_b: (abs_scale default_epsilon_b)
+    ~name: "scaled_contributions"
     ()
 
 let test_large_difference () =
@@ -458,7 +469,7 @@ let test_global_noise3 () = test_global_noise "3" 1.
 let tests = [
   "default", test_default;
   "shortest_window", test_shortest_window;
-  "negative", test_negative;
+  "scaled_contributions", test_scaled_contributions;
   "large difference", test_large_difference;
   "large difference_corrected", test_large_difference_corrected;
   "subaction", test_subaction;

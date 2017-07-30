@@ -39,7 +39,7 @@ let adjust_infinite_contributions ~delta contributions =
   in
   let n = List.length infinite_contributions in
   assert (n > 0);
-  let new_contrib = max 0. (delta /. float n) in
+  let new_contrib = delta /. float n in
   List.iter
     (fun x -> U_control.update_contrib x new_contrib)
     infinite_contributions
