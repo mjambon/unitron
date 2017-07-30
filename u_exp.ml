@@ -9,9 +9,16 @@ open U_log
 type goal = {
   goal_name: string;
   goal_condition: U_system.t -> U_time.t -> bool;
+
+  goal_time_to_confirm_convergence: U_time.t;
+    (* Number of consecutive times the goal condition must be met
+       in order to assume convergence toward the goal. *)
+
   mutable goal_reached_at: U_time.t option;
     (* Date of the cycle after which the goal was reached.
        For the number of steps, add 1. *)
+
+  mutable goal_converged: bool;
 }
 
 type experiment = {
@@ -19,25 +26,53 @@ type experiment = {
   exp_goals: goal list;
 }
 
-let update_goal_state x system t =
-  match x.goal_reached_at with
-  | Some _ -> ()
-  | None ->
-      if x.goal_condition system t then (
-        x.goal_reached_at <- Some t
-      )
+let update_converged_flag x t =
+  let converged =
+    match x.goal_reached_at with
+    | None -> false
+    | Some t1 ->
+        let consecutive_times_converged = t - t1 + 1 in
+        assert (consecutive_times_converged >= 1);
+        consecutive_times_converged >= x.goal_time_to_confirm_convergence
+  in
+  x.goal_converged <- converged
 
-let goal_was_reached x =
-  x.goal_reached_at <> None
+(*
+   If convergence hasn't been confirmed yet,
+   update the fields `goal_reached_at` and `goal_converged`.
+*)
+let update_goal_state x system t =
+  match x.goal_converged with
+  | true -> ()
+  | false ->
+      (if x.goal_condition system t then
+         (match x.goal_reached_at with
+          | Some _ ->
+              ()
+          | None ->
+              x.goal_reached_at <- Some t
+         )
+       else
+         x.goal_reached_at <- None
+      );
+      update_converged_flag x t
 
 let stop_condition (x : experiment) system t =
   List.iter (fun goal -> update_goal_state goal system t) x.exp_goals;
-  List.for_all goal_was_reached x.exp_goals
+  let all_converged = List.for_all (fun x -> x.goal_converged) x.exp_goals in
+  (if all_converged then
+     assert (List.for_all (fun x -> x.goal_reached_at <> None) x.exp_goals)
+   else
+     ()
+  );
+  all_converged
 
-let create_goal name cond = {
+let create_goal ?(time_to_confirm_convergence = 100) name cond = {
   goal_name = name;
   goal_condition = cond;
+  goal_time_to_confirm_convergence = time_to_confirm_convergence;
   goal_reached_at = None;
+  goal_converged = false;
 }
 
 let create_experiment name goals = {
@@ -64,6 +99,7 @@ let make_report l =
 
   List.iter (fun x ->
     List.iter (fun goal ->
+      assert goal.goal_converged;
       match goal.goal_reached_at with
       | None -> assert false
       | Some t ->
