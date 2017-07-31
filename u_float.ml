@@ -13,3 +13,9 @@ let is_finite x =
 let min l = List.fold_left min infinity l
 let max l = List.fold_left max neg_infinity l
 let sum l = List.fold_left (+.) 0. l
+
+let default ~if_nan x =
+  if (x <> x) then
+    if_nan
+  else
+    x

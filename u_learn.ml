@@ -15,9 +15,10 @@ let adjust_partial_contribution ~delta ~total_weight x =
        previously estimated with high certainty. *)
     max 0.001 share
   in
-  let new_contrib =
-    U_control.(x.last) +. share *. delta
-  in
+  let old_contrib = U_control.get_contrib_value x in
+  let new_contrib = old_contrib +. share *. delta in
+  logf "contrib: %g -> %g"
+    old_contrib new_contrib;
   U_control.update_contrib x new_contrib
 
 (*
@@ -32,36 +33,53 @@ let adjust_partial_contributions ~delta ~total_weight contributions =
       x
   ) contributions
 
-let adjust_infinite_contributions ~delta contributions =
+let adjust_contributions_evenly ~delta contributions =
+  let n = List.length contributions in
+  if n > 0 then (
+    let contrib_delta = delta /. float n in
+    List.iter
+      (fun x ->
+         let old_contrib = U_control.get_contrib_value x in
+         let new_contrib = old_contrib +. contrib_delta in
+         logf "contrib: %g -> %g"
+           old_contrib new_contrib;
+         U_control.update_contrib x new_contrib)
+      contributions
+  )
+
+let adjust_contributions_with_infinite_weight ~delta contributions =
   let infinite_contributions =
     List.filter (fun x -> U_control.get_weight x = infinity)
       contributions
   in
-  let n = List.length infinite_contributions in
-  assert (n > 0);
-  let new_contrib = delta /. float n in
-  List.iter
-    (fun x -> U_control.update_contrib x new_contrib)
-    infinite_contributions
+  adjust_contributions_evenly ~delta infinite_contributions
 
 let adjust_contributions contributions feedback =
   let prediction =
-    List.fold_left (fun acc x -> acc +. U_control.(x.last))
+    List.fold_left (fun acc x ->
+      let contrib = U_control.get_contrib_value x in
+      logf "contribution to prediction: %g" contrib;
+      acc +. contrib
+    )
       0. contributions
   in
   let total_weight =
-    List.fold_left (fun acc x -> acc +. U_control.get_weight x)
+    List.fold_left (fun acc x ->
+      let w = U_control.get_weight x in
+      logf "weight: %g" w;
+      acc +. w
+    )
       0. contributions
   in
   let delta = feedback -. prediction in
-  logf "feedback: %g, delta: %g, total_weight: %g"
-    feedback delta total_weight;
-  if total_weight = 0. then
-    ()
-  else if total_weight > 0. && total_weight < infinity then
+  logf "feedback: %g, prediction: %g, delta: %g, total_weight: %g"
+    feedback prediction delta total_weight;
+  if total_weight > 0. && total_weight < infinity then
     adjust_partial_contributions ~delta ~total_weight contributions
+  else if total_weight = 0. then
+    adjust_contributions_evenly ~delta contributions
   else if total_weight = infinity then
-    adjust_infinite_contributions ~delta contributions
+    adjust_contributions_with_infinite_weight ~delta contributions
   else
     assert false
 
