@@ -48,8 +48,8 @@ build: META
 		unitron.cmxa u_test_main.ml
 
 test: build
-	time -p ./u_test > test.log 2>&1
-	grep '^>' test.log | tee summary.log
+	time -p \
+    ./u_test 2>&1 | tee test.log | stdbuf -o 0 grep '^>' | tee summary.log
 
 META: META.in
 	echo 'requires = "$(PACKAGES)"' > META

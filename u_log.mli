@@ -2,6 +2,12 @@
    Logging.
 *)
 
+val debug : bool
+  (* to be used as:
+       if debug then
+         logf "..." ...;
+  *)
+
 val string_of_exn : exn -> string
   (* convert an exception into a readable multiline string including
      a backtrace. *)

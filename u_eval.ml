@@ -11,7 +11,7 @@
 open Printf
 open U_log
 
-let default_global_iter = 10 (* 100 *)
+let default_global_iter = 100
 let default_window_length = 10
 
 let default_base_contrib_a0 = 1.
@@ -22,8 +22,10 @@ let default_base_contrib_b0 = 0.1
 let default_base_contrib_b1 = 0.2
 let default_base_contrib_b2 = 0.05
 
-let default_epsilon_a = 0.05
-let default_epsilon_b = 0.005
+let default_epsilon_a0 = 0.05
+let default_epsilon_b0 = 0.005
+
+let moving_avg_cst = 0.5
 
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
 
@@ -101,8 +103,6 @@ let test_system_once
   ?(noise = fun t -> 0.)
   ?(determine_actions_ab = default_determine_actions_ab)
   () =
-
-  let moving_avg_cst = 0.1 in
 
   let controls = U_control.create_set () in
   let actions = U_action.create_set () in
@@ -255,24 +255,24 @@ let test_system
   true
 
 let create_default_goals
-    ?(epsilon_a = default_epsilon_a)
-    ?(epsilon_b = default_epsilon_b)
+    ?(epsilon_a0 = default_epsilon_a0)
+    ?(epsilon_b0 = default_epsilon_b0)
     ~base_contrib_a0
     ~base_contrib_b0
     get_controls =
-  assert (epsilon_a > 0.);
-  assert (epsilon_b > 0.);
+  assert (epsilon_a0 > 0.);
+  assert (epsilon_b0 > 0.);
   let cond_a0 system t =
     let control_a, control_b = get_controls () in
     let contrib_a0 = U_control.get_contribution control_a 0 in
     let avg = U_control.get_average contrib_a0 in
-    abs_float (avg -. base_contrib_a0) <= epsilon_a
+    abs_float (avg -. base_contrib_a0) <= epsilon_a0
   in
   let cond_b0 system t =
     let control_a, control_b = get_controls () in
     let contrib_b0 = U_control.get_contribution control_b 0 in
     let avg = U_control.get_average contrib_b0 in
-    abs_float (avg -. base_contrib_b0) <= epsilon_b
+    abs_float (avg -. base_contrib_b0) <= epsilon_b0
   in
   let goal_a = U_exp.create_goal "a0" cond_a0 in
   let goal_b = U_exp.create_goal "b0" cond_b0 in
@@ -281,13 +281,15 @@ let create_default_goals
 let make_create_experiment
     ~base_contrib_a0
     ~base_contrib_b0
-    ?epsilon_a
-    ?epsilon_b
+    ?epsilon_a0
+    ?epsilon_b0
     ?(create_extra_goals = fun get_controls -> [])
     name =
   fun get_controls ->
     let base_goals =
       create_default_goals
+        ?epsilon_a0
+        ?epsilon_b0
         ~base_contrib_a0
         ~base_contrib_b0
         get_controls
@@ -303,8 +305,8 @@ let make_test
     ?(base_contrib_b0 = default_base_contrib_b0)
     ?(base_contrib_b1 = default_base_contrib_b1)
     ?(base_contrib_b2 = default_base_contrib_b2)
-    ?epsilon_a
-    ?epsilon_b
+    ?epsilon_a0
+    ?epsilon_b0
     ?noise_a
     ?noise_b
     ?noise
@@ -315,8 +317,8 @@ let make_test
     make_create_experiment
       ~base_contrib_a0
       ~base_contrib_b0
-      ?epsilon_a
-      ?epsilon_b
+      ?epsilon_a0
+      ?epsilon_b0
       name
   in
   test_system
@@ -350,8 +352,20 @@ let test_shortest_window () =
     ~base_contrib_b2: 0.
     ()
 
+let test_half_window () =
+  make_test
+    ~name: "half_window"
+    ~window_length: (default_window_length / 2)
+    ()
+
+let test_double_window () =
+  make_test
+    ~name: "double_window"
+    ~window_length: (2 * default_window_length)
+    ()
+
 let test_scaled_contributions () =
-  let scale x = 1000. *. x in
+  let scale x = -1000. *. x in
   let abs_scale x = abs_float (scale x) in
   make_test
     ~base_contrib_a0: (scale default_base_contrib_a0)
@@ -360,8 +374,8 @@ let test_scaled_contributions () =
     ~base_contrib_b0: (scale default_base_contrib_b0)
     ~base_contrib_b1: (scale default_base_contrib_b1)
     ~base_contrib_b2: (scale default_base_contrib_b2)
-    ~epsilon_a: (abs_scale default_epsilon_a)
-    ~epsilon_b: (abs_scale default_epsilon_b)
+    ~epsilon_a0: (abs_scale default_epsilon_a0)
+    ~epsilon_b0: (abs_scale default_epsilon_b0)
     ~name: "scaled_contributions"
     ()
 
@@ -375,13 +389,13 @@ let test_large_difference_corrected () =
   (* hardcoded ratio of max gap between expected contributions,
      from default setup to this setup *)
   let r = (100. -. (-0.5)) /. (1. -. (-0.5)) in
-  let epsilon_a = r *. default_epsilon_a in
-  let epsilon_b = r *. default_epsilon_b in
+  let epsilon_a0 = r *. default_epsilon_a0 in
+  let epsilon_b0 = r *. default_epsilon_b0 in
   make_test
     ~name: "large_difference_corrected"
     ~base_contrib_a0: 100.
-    ~epsilon_a
-    ~epsilon_b
+    ~epsilon_a0
+    ~epsilon_b0
     ()
 
 (* B active => A active *)
@@ -423,6 +437,8 @@ let test_nonnoisy_contribution () =
   assert (default_base_contrib_a0 = 1.);
   make_test
     ~name: "nonnoisy_contribution"
+    ~epsilon_a0: 0.2
+    ~epsilon_b0: 0.02
     ()
 
 let test_noisy_contribution () =
@@ -432,6 +448,8 @@ let test_noisy_contribution () =
     ~noise_a:(fun _ ->
       U_random.normal ~stdev: 0.5 ()
     )
+    ~epsilon_a0: 0.2
+    ~epsilon_b0: 0.02
     ()
 
 let test_noisy_contributions () =
@@ -445,8 +463,8 @@ let test_noisy_contributions () =
   in
   make_test
     ~name: "noisy_contributions"
-    ~epsilon_a: 0.1
-    ~epsilon_b: 0.08
+    ~epsilon_a0: 0.4
+    ~epsilon_b0: 0.04
     ~noise_a
     ~noise_b
     ()
@@ -463,23 +481,21 @@ let test_global_noise suffix noise_stdev =
     ()
 
 let test_global_noise1 () = test_global_noise "1" 0.1
-let test_global_noise2 () = test_global_noise "2" 0.5
-let test_global_noise3 () = test_global_noise "3" 1.
+let test_global_noise2 () = test_global_noise "2" 0.2
 
 let tests = [
   "default", test_default;
   "shortest_window", test_shortest_window;
+  "half_window", test_half_window;
+  "double_window", test_double_window;
   "scaled_contributions", test_scaled_contributions;
   "large difference", test_large_difference;
   "large difference_corrected", test_large_difference_corrected;
   "subaction", test_subaction;
   "adaptation", test_adaptation;
-(*
   "non-noisy contribution", test_nonnoisy_contribution;
   "noisy contribution", test_noisy_contribution;
   "noisy contributions", test_noisy_contributions;
   "global noise1", test_global_noise1;
   "global noise2", test_global_noise2;
-  "global noise3", test_global_noise3;
-*)
 ]

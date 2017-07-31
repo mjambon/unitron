@@ -17,8 +17,9 @@ let adjust_partial_contribution ~delta ~total_weight x =
   in
   let old_contrib = U_control.get_contrib_value x in
   let new_contrib = old_contrib +. share *. delta in
-  logf "contrib: %g -> %g"
-    old_contrib new_contrib;
+  if debug then
+    logf "contrib: %g -> %g"
+      old_contrib new_contrib;
   U_control.update_contrib x new_contrib
 
 (*
@@ -41,8 +42,9 @@ let adjust_contributions_evenly ~delta contributions =
       (fun x ->
          let old_contrib = U_control.get_contrib_value x in
          let new_contrib = old_contrib +. contrib_delta in
-         logf "contrib: %g -> %g"
-           old_contrib new_contrib;
+         if debug then
+           logf "contrib: %g -> %g"
+             old_contrib new_contrib;
          U_control.update_contrib x new_contrib)
       contributions
   )
@@ -58,7 +60,8 @@ let adjust_contributions contributions feedback =
   let prediction =
     List.fold_left (fun acc x ->
       let contrib = U_control.get_contrib_value x in
-      logf "contribution to prediction: %g" contrib;
+      if debug then
+        logf "contribution to prediction: %g" contrib;
       acc +. contrib
     )
       0. contributions
@@ -66,7 +69,8 @@ let adjust_contributions contributions feedback =
   let total_weight =
     List.fold_left (fun acc x ->
       let w = U_control.get_weight x in
-      logf "weight: %g" w;
+      if debug then
+        logf "weight: %g" w;
       acc +. w
     )
       0. contributions

@@ -141,7 +141,7 @@ let print_goal_report exp_name (goal_name, int_list) =
   logf "  p90          = %.1f" (p 0.90);
   logf "  p100 (max)   = %g" (p 1.);
   (* This line is meant to produce a summary with `grep '^>'` *)
-  Printf.printf "> %-30s %.1f\n"
+  Printf.printf "> %-30s %.1f\n%!"
     (exp_name ^ "." ^ goal_name) median
 
 let print_report (exp_name, goals_reached) =

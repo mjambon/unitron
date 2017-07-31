@@ -25,7 +25,7 @@ type t = {
 
 let create_contribution moving_avg_cst =
   {
-    last = 0.;
+    last = nan;
     variance =
       Moving_variance.init
         ~r_avg:moving_avg_cst
@@ -86,6 +86,9 @@ let get_contribution x age =
 
 let get_average contrib =
   Moving_variance.get_average contrib.variance
+
+let get_contrib_value contrib =
+  U_float.default ~if_nan:0. (get_average contrib)
 
 let get_stdev contrib =
   Moving_variance.get_stdev contrib.variance
