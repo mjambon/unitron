@@ -4,6 +4,7 @@
    a satisfying state.
 *)
 
+open Printf
 open U_log
 
 type goal = {
@@ -124,25 +125,52 @@ let make_report l =
   in
   (first_exp.exp_name, goals_reached)
 
+let latex_of_goal_name = function
+  | "a0" -> "A"
+  | "b0" -> "B"
+  | s -> s
+
 let print_goal_report exp_name (goal_name, int_list) =
   let data = List.map float int_list in
   let mean, stdev = U_stat.get_mean_and_stdev data in
   let p = U_stat.get_percentile data in
+  let p0 = p 0. in
+  let p10 = p 0.10 in
+  let p50 = p 0.50 in
+  let p90 = p 0.90 in
+  let p100 = p 1. in
   logf "experiment %s, number of steps used to reach goal %s:"
     exp_name goal_name;
-  let median = p 0.5 in
   logf "  n = %i" (List.length data);
   logf "  mean, stdev  = %.2f, %.2f" mean stdev;
-  logf "  p0 (min)     = %g" (p 0.);
-  logf "  p10          = %.1f" (p 0.10);
-  logf "  p25          = %.1f" (p 0.25);
-  logf "  p50 (median) = %.1f" median;
-  logf "  p75          = %.1f" (p 0.75);
-  logf "  p90          = %.1f" (p 0.90);
-  logf "  p100 (max)   = %g" (p 1.);
+  logf "  p0 (min)     = %g" p0;
+  logf "  p10          = %.1f" p10;
+  logf "  p50 (median) = %.1f" p50;
+  logf "  p90          = %.1f" p90;
+  logf "  p100 (max)   = %g" p100;
+
   (* This line is meant to produce a summary with `grep '^>'` *)
-  Printf.printf "> %-30s %.1f\n%!"
-    (exp_name ^ "." ^ goal_name) median
+  printf "> %-30s %.1f\n%!"
+    (exp_name ^ "." ^ goal_name) p50;
+
+  (* The following lines are for the paper *)
+  printf {|
+Number of steps to converge to Condition$_{%s}$:
+
+$$
+\begin{eqnarray}
+\mathrm{10^{th} \dots 90^{th}\ percentile} &=& %.1f \dots %.1f\\
+\mathrm{median} &=& %.1f\\
+\hat{\mu} &=& %.1f\\
+\hat{\sigma} &=& %.1f\\
+\end{eqnarray}
+$$
+%!|}
+    (latex_of_goal_name goal_name)
+    p10 p90
+    p50
+    mean
+    stdev
 
 let print_report (exp_name, goals_reached) =
   List.iter (print_goal_report exp_name) goals_reached
