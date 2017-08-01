@@ -7,6 +7,8 @@
 open Printf
 open U_log
 
+let default_time_to_confirm_convergence = 1000
+
 type goal = {
   goal_name: string;
   goal_condition: U_system.t -> U_time.t -> bool;
@@ -68,7 +70,9 @@ let stop_condition (x : experiment) system t =
   );
   all_converged
 
-let create_goal ?(time_to_confirm_convergence = 100) name cond = {
+let create_goal
+    ?(time_to_confirm_convergence = default_time_to_confirm_convergence)
+    name cond = {
   goal_name = name;
   goal_condition = cond;
   goal_time_to_confirm_convergence = time_to_confirm_convergence;
