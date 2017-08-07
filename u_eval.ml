@@ -25,8 +25,6 @@ let default_base_contrib_b2 = 0.05
 let default_epsilon_a0 = 0.05
 let default_epsilon_b0 = 0.005
 
-let moving_avg_cst = 0.5
-
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
 
 let print_controls controls =
@@ -107,7 +105,7 @@ let test_system_once
   let controls = U_control.create_set () in
   let actions = U_action.create_set () in
   let add_control id actionid =
-    U_control.add ~moving_avg_cst ~window_length ~id ~actionid controls
+    U_control.add ~window_length ~id ~actionid controls
   in
 
   (* A has its own frequency and constant contribution. *)

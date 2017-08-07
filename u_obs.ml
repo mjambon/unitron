@@ -51,25 +51,25 @@ let update state t info =
   state.last_updated <- t
 
 let create_stat window get =
-  let r = 1. /. float window in
-  let state = Moving_variance.init ~r_avg:r ~r_var:r () in
+  let alpha = 1. /. float window in
+  let state = Mv_var.init ~alpha_avg:alpha ~alpha_var:alpha () in
   let force_update t =
     let x = get t in
     if U_float.is_finite x then
-      Moving_variance.update state x
+      Mv_var.update state x
   in
   let update = U_lazy.get force_update in
   let get_average t =
     update t;
-    Moving_variance.get_average state
+    Mv_var.get_average state
   in
   let get_stdev t =
     update t;
-    Moving_variance.get_stdev state
+    Mv_var.get_stdev state
   in
   let get_normalized t =
     update t;
-    Moving_variance.get_normalized state
+    Mv_var.get_normalized state
   in
   get_average, get_stdev, get_normalized
 
