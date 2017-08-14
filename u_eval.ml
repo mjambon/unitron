@@ -12,7 +12,7 @@ open Printf
 open U_log
 
 let default_global_iter = 100
-let default_window_length = 10
+let default_window_length = 5
 
 let default_base_contrib_a0 = 1.
 let default_base_contrib_a1 = -0.5
@@ -340,9 +340,9 @@ let test_default () =
     ~name: "default"
     ()
 
-let test_shortest_window () =
+let test_window1 () =
   make_test
-    ~name: "shortest_window"
+    ~name: "window1"
     ~window_length: 1
     ~base_contrib_a1: 0.
     ~base_contrib_a2: 0.
@@ -350,16 +350,16 @@ let test_shortest_window () =
     ~base_contrib_b2: 0.
     ()
 
-let test_half_window () =
+let test_window3 () =
   make_test
-    ~name: "half_window"
-    ~window_length: (default_window_length / 2)
+    ~name: "window3"
+    ~window_length: 3
     ()
 
-let test_double_window () =
+let test_window10 () =
   make_test
-    ~name: "double_window"
-    ~window_length: (2 * default_window_length)
+    ~name: "window10"
+    ~window_length: 10
     ()
 
 let test_scaled_contributions () =
@@ -483,9 +483,9 @@ let test_global_noise2 () = test_global_noise "2" 0.2
 
 let tests = [
   "default", test_default;
-  "shortest_window", test_shortest_window;
-  "half_window", test_half_window;
-  "double_window", test_double_window;
+  "window1", test_window1;
+  "window3", test_window3;
+  "window10", test_window10;
   "scaled_contributions", test_scaled_contributions;
   "large difference", test_large_difference;
   "large difference_corrected", test_large_difference_corrected;
