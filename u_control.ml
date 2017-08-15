@@ -11,7 +11,7 @@ open Printf
 
 type contribution = {
   mutable last: float;
-  variance: Mv_var.state;
+  variance: Mv_adapt_avg.state;
     (* object that includes exponential moving average
        and exponential moving variance *)
 }
@@ -23,20 +23,17 @@ type t = {
     (* one contribution per age, starting from age 0 *)
 }
 
-let create_contribution moving_avg_cst =
+let create_contribution () =
   {
     last = nan;
     variance =
-      Mv_var.init
-        ~alpha_avg:moving_avg_cst
-        ~alpha_var:moving_avg_cst
-        ()
+      Mv_adapt_avg.init ~track_variance:true ()
   }
 
-let create ~moving_avg_cst ~window_length ~id ~actionid =
+let create ~window_length ~id ~actionid =
   let contributions =
     Array.init window_length
-      (fun i -> create_contribution moving_avg_cst)
+      (fun i -> create_contribution ())
   in
   {
     id;
@@ -47,8 +44,8 @@ let create ~moving_avg_cst ~window_length ~id ~actionid =
 let create_set () =
   U_set.create (fun x -> x.id)
 
-let add ~moving_avg_cst ~window_length ~id ~actionid set =
-  let control = create ~moving_avg_cst ~window_length ~id ~actionid in
+let add ~window_length ~id ~actionid set =
+  let control = create ~window_length ~id ~actionid in
   U_set.add set control
 
 let get set id =
@@ -67,31 +64,31 @@ let get set id =
 *)
 let get_weight (x : contribution) =
   let mv = x.variance in
-  let n = Mv_var.get_count mv in
+  let n = Mv_adapt_avg.get_age mv in
   if n <= 1 then
     (* Assign an infinite weight, which is usable, unlike a NaN. *)
     infinity
   else
     (* Initially, the estimate of the standard deviation is very coarse.
        Not sure if or how it should be tweaked for better results. *)
-    Mv_var.get_stdev (x.variance)
+    Mv_adapt_avg.get_stdev (x.variance)
 
 let update_contrib (x : contribution) v =
   assert (v = v);
-  Mv_var.update x.variance v;
+  Mv_adapt_avg.update x.variance v;
   x.last <- v
 
 let get_contribution x age =
   x.contributions.(age)
 
 let get_average contrib =
-  Mv_var.get_average contrib.variance
+  Mv_adapt_avg.get contrib.variance
 
 let get_contrib_value contrib =
   U_float.default ~if_nan:0. (get_average contrib)
 
 let get_stdev contrib =
-  Mv_var.get_stdev contrib.variance
+  Mv_adapt_avg.get_stdev contrib.variance
 
 let get_contribution_average x age =
   get_average (get_contribution x age)
@@ -99,16 +96,16 @@ let get_contribution_average x age =
 let iter_contributions x f =
   Array.iteri (fun age x ->
     let v = x.variance in
-    let average = Mv_var.get_average v in
-    let stdev = Mv_var.get_stdev v in
+    let average = Mv_adapt_avg.get v in
+    let stdev = Mv_adapt_avg.get_stdev v in
     f ~age ~average ~stdev
   ) x.contributions
 
 let map_contributions x f =
   Array.mapi (fun age x ->
     let v = x.variance in
-    let average = Mv_var.get_average v in
-    let stdev = Mv_var.get_stdev v in
+    let average = Mv_adapt_avg.get v in
+    let stdev = Mv_adapt_avg.get_stdev v in
     f ~age ~average ~stdev
   ) x.contributions
 
@@ -116,8 +113,8 @@ let info_of_contributions a =
   let strings =
     Array.mapi (fun age x ->
       let v = x.variance in
-      let mean = Mv_var.get_average v in
-      let stdev = Mv_var.get_stdev v in
+      let mean = Mv_adapt_avg.get v in
+      let stdev = Mv_adapt_avg.get_stdev v in
       sprintf "%i:(%.2g, %.2g)"
         age
         mean stdev
