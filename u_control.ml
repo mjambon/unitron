@@ -145,7 +145,7 @@ let print_csv oc x =
   let a =
     Array.mapi (fun age x ->
       sprintf "%g"
-        (Mv_var.get_average x.variance)
+        (Mv_adapt_avg.get x.variance)
     ) x.contributions
   in
   fprintf oc "%s\n"
