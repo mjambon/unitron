@@ -14,6 +14,9 @@ open U_log
 let default_global_iter = 100
 let default_window_length = 5
 
+(* We give up with an error after this many steps *)
+let max_iter = 10_000
+
 let default_base_contrib_a0 = 1.
 let default_base_contrib_a1 = -0.5
 let default_base_contrib_a2 = 0.25
@@ -29,10 +32,9 @@ let moving_avg_cst = 0.5
 
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
 
-let print_controls controls =
-  U_set.iter_ordered controls (fun x ->
-    logf "%s" (U_control.to_info x)
-  )
+let print_control oc x =
+  logf "%s" (U_control.to_info x);
+  U_control.print_csv oc x
 
 let get_average_contributions window_length acc =
   let stat =
@@ -86,8 +88,20 @@ let create_delayed_effect_manager () =
   in
   add_action, U_lazy.get pop_effects
 
+let csv_dir = "out"
+
+let get_csv_dir () =
+  if not (Sys.file_exists csv_dir) then
+    Unix.mkdir csv_dir 0o777;
+  csv_dir
+
+let get_csv_filename name =
+  sprintf "%s/%s.csv"
+    (get_csv_dir ()) name
+
 let test_system_once
   ?inner_log_mode
+  ~name
   ~create_experiment
   ~window_length
   ~controlid_a
@@ -176,11 +190,23 @@ let test_system_once
       ~get_action
   in
   let experiment = create_experiment get_controls in
+  let oc_a =
+    U_control.open_csv window_length (get_csv_filename (name ^ "-a")) in
+  let oc_b =
+    U_control.open_csv window_length (get_csv_filename (name ^ "-b")) in
+
   let after_step t =
-    print_controls controls;
+    let control_a, control_b = get_controls () in
+    print_control oc_a control_a;
+    print_control oc_b control_b;
     print_observables system t;
     let stop = U_exp.stop_condition experiment system t in
-    not stop
+    let continue = not stop in
+    if continue && t >= max_iter then (
+      eprintf "> %s ERROR: too many iterations (%i)\n%!" name max_iter;
+      failwith "Too many iterations"
+    );
+    continue
   in
   U_cycle.loop
     ?inner_log_mode
@@ -188,6 +214,8 @@ let test_system_once
     ~after_step
     system;
 
+  close_out oc_a;
+  close_out oc_b;
   let control_a, control_b = get_controls () in
   (experiment, control_a, control_b)
 
@@ -225,6 +253,7 @@ let test_system
     logf "--- Run %i/%i ---" i global_iter;
     let experiment, control_a, control_b =
       test_system_once
+        ~name: (sprintf "%s-%i" name i)
         ~inner_log_mode
         ~create_experiment
         ~window_length

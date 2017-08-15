@@ -129,3 +129,27 @@ let to_info x =
   sprintf "control %s: [%s]"
     (U_controlid.to_string x.id)
     (info_of_contributions x.contributions)
+
+let open_csv window_length fname =
+  let header =
+    let a =
+      Array.init window_length
+        (fun age ->
+           sprintf "contrib[%i]" age
+        )
+    in
+    String.concat "," (Array.to_list a)
+  in
+  let oc = open_out fname in
+  fprintf oc "%s\n" header;
+  oc
+
+let print_csv oc x =
+  let a =
+    Array.mapi (fun age x ->
+      sprintf "%g"
+        (Mv_var.get_average x.variance)
+    ) x.contributions
+  in
+  fprintf oc "%s\n"
+    (String.concat "," (Array.to_list a))
