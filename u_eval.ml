@@ -41,7 +41,7 @@ let get_average_contributions window_length acc =
     )
   in
   List.iter (fun control ->
-    U_control.iter_contributions control (fun ~age ~average ~stdev ->
+    U_control.iter_contributions control (fun ~age ~contrib ~average ~stdev ->
       let (add1, _, _), (add2, _, _) = stat.(age) in
       add1 average;
       add2 stdev
