@@ -72,6 +72,12 @@ let get_weight (x : contribution) =
     (* Initially, the estimate of the standard deviation is very coarse.
        Not sure if or how it should be tweaked for better results. *)
     Mv_adapt_avg.get_stdev (x.variance)
+(*
+    let alpha_tracker = Mv_adapt_avg.get_alpha_tracker x.variance in
+    let gain = Mv_avg.get Mv_adapt.(alpha_tracker.gain) in
+    let loss = Mv_avg.get Mv_adapt.(alpha_tracker.loss) in
+    gain -. loss
+*)
 
 let update_contrib (x : contribution) v =
   assert (v = v);
@@ -130,12 +136,22 @@ let to_info x =
 let open_csv window_length fname =
   let header =
     let a =
-      Array.init window_length
-        (fun age ->
-           sprintf "contrib[%i]" age
-        )
+      Array.to_list (
+        Array.init window_length
+          (fun age ->
+             sprintf "contrib[%i]" age
+          )
+      )
     in
-    String.concat "," (Array.to_list a)
+    let b =
+      Array.to_list (
+        Array.init window_length
+          (fun age ->
+             sprintf "weight[%i]" age
+          )
+      )
+    in
+    String.concat "," (a @ b)
   in
   let oc = open_out fname in
   fprintf oc "%s\n" header;
@@ -143,10 +159,20 @@ let open_csv window_length fname =
 
 let print_csv oc x =
   let a =
-    Array.mapi (fun age x ->
-      sprintf "%g"
-        (Mv_adapt_avg.get x.variance)
-    ) x.contributions
+    Array.to_list (
+      Array.mapi (fun age x ->
+        sprintf "%g"
+          (Mv_adapt_avg.get x.variance)
+      ) x.contributions
+    )
+  in
+  let b =
+    Array.to_list (
+      Array.mapi (fun age x ->
+        sprintf "%g"
+          (get_weight x)
+      ) x.contributions
+    )
   in
   fprintf oc "%s\n"
-    (String.concat "," (Array.to_list a))
+    (String.concat "," (a @ b))
