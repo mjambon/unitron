@@ -293,14 +293,14 @@ let create_default_goals
   let cond_a0 system t =
     let control_a, control_b = get_controls () in
     let contrib_a0 = U_control.get_contribution control_a 0 in
-    let avg = U_control.get_average contrib_a0 in
-    abs_float (avg -. base_contrib_a0) <= epsilon_a0
+    let x = U_control.get_contrib_value contrib_a0 in
+    abs_float (x -. base_contrib_a0) <= epsilon_a0
   in
   let cond_b0 system t =
     let control_a, control_b = get_controls () in
     let contrib_b0 = U_control.get_contribution control_b 0 in
-    let avg = U_control.get_average contrib_b0 in
-    abs_float (avg -. base_contrib_b0) <= epsilon_b0
+    let x = U_control.get_contrib_value contrib_b0 in
+    abs_float (x -. base_contrib_b0) <= epsilon_b0
   in
   let goal_a = U_exp.create_goal "a0" cond_a0 in
   let goal_b = U_exp.create_goal "b0" cond_b0 in
