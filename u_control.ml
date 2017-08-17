@@ -145,7 +145,7 @@ let open_csv window_length fname =
       Array.to_list (
         Array.init window_length
           (fun age ->
-             sprintf "weight[%i]" age
+             sprintf "orig_weight[%i]" age
           )
       )
     in

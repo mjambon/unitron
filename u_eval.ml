@@ -15,7 +15,7 @@ let default_global_iter = 100
 let default_window_length = 5
 
 (* We give up with an error after this many steps *)
-let max_iter = 10_000
+let max_iter = 100_000
 
 let default_base_contrib_a0 = 1.
 let default_base_contrib_a1 = -0.5
@@ -29,6 +29,7 @@ let default_epsilon_a0 = 0.05
 let default_epsilon_b0 = 0.005
 
 let default_determine_actions_ab t = (U_random.pick 0.5, U_random.pick 0.5)
+let determine_actions_always_b t = (U_random.pick 0.5, true)
 
 let print_control oc x =
   logf "%s" (U_control.to_info x);
@@ -464,19 +465,19 @@ let test_nonnoisy_contribution () =
   assert (default_base_contrib_a0 = 1.);
   make_test
     ~name: "nonnoisy_contribution"
-    ~epsilon_a0: 0.2
-    ~epsilon_b0: 0.02
+    ~determine_actions_ab:determine_actions_always_b
+    ~epsilon_b0: 1000.
     ()
 
-let test_noisy_contribution () =
+let test_noisy_other_contribution () =
   assert (default_base_contrib_a0 = 1.);
   make_test
-    ~name: "noisy_contribution"
-    ~noise_a:(fun _ ->
+    ~name: "noisy_other_contribution"
+    ~determine_actions_ab:determine_actions_always_b
+    ~noise_b:(fun _ ->
       U_random.normal ~stdev: 0.5 ()
     )
-    ~epsilon_a0: 0.2
-    ~epsilon_b0: 0.02
+    ~epsilon_b0: 1000.
     ()
 
 let test_noisy_contributions () =
@@ -521,7 +522,7 @@ let tests = [
   "subaction", test_subaction;
   "adaptation", test_adaptation;
   "non-noisy contribution", test_nonnoisy_contribution;
-  "noisy contribution", test_noisy_contribution;
+  "noisy other contribution", test_noisy_other_contribution;
   "noisy contributions", test_noisy_contributions;
   "global noise1", test_global_noise1;
   "global noise2", test_global_noise2;
